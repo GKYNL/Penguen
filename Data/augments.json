@@ -34,7 +34,7 @@
 	{ "id": "silver_8", "type": "stat", "name": "Magnet", "desc": "Toplama Menzili +50%.", "stat": "pickup_range", "val": 10, "rarity": "silver" },
 	{ "id": "silver_9", "type": "stat", "name": "Ice Spikes", "desc": "Sana çarpan düşmanlara 25 hasar ver.", "stat": "thorns", "val": 25.0, "rarity": "silver" },
 	{ "id": "silver_10", "type": "stat", "name": "Wind Rush", "desc": "Dash bekleme süresi -1sn.", "stat": "dash_cooldown", "val": -1.0, "rarity": "silver" },
-	{ "id": "silver_11", "type": "stat", "name": "Triple Shot", "desc": "Mermiler %10 şansla 3 adet fırlatılır.", "stat": "multishot_chance", "val": 1, "rarity": "silver" }
+	{ "id": "silver_11", "type": "stat", "name": "Triple Shot", "desc": "Mermiler %10 şansla 3 adet fırlatılır.", "stat": "multishot_chance", "val": 0.1, "rarity": "silver" }
   ],
   "tier_2_pool": [
 	{ "id": "gold_1", "name": "Thunderlord", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "3 Hedef Yıldırım", "damage": 50, "radius": 4}, {"desc": "5 Hedef Yıldırım", "damage": 80, "radius": 5}, {"desc": "8 Hedef + Şok", "damage": 120, "radius": 6}, {"desc": "MAX: Zincirleme Kıyamet", "damage": 200, "radius": 8}] },

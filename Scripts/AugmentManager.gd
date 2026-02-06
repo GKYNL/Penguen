@@ -11,7 +11,7 @@ var current_xp = 0
 var max_xp = 100
 var active_weapon_id = ""
 
-# TÜM EKSİK STATLAR EKLENDİ
+# TÜM EKSİK STATLAR DAHİL EDİLMİŞ HALİ
 var player_stats = {
 	"max_hp": 100.0,
 	"speed": 12.5,
@@ -22,14 +22,15 @@ var player_stats = {
 	"freeze_duration": 4.0,
 	"attack_range": 0.20,
 	"dash_cooldown": 3.0,
-	"lifesteal_flat": 0,
-	"execution_threshold": 0.0,
-	"luck": 0.0,             # Alchemist
-	"armor": 0.0,            # Titan Form (İleride kullanılabilir)
-	"multishot_chance": 0.0, # Triple Shot
-	"waves": 1,              # Echoing Screams
-	"dash_charges": 1,       # Wind Walker
-	"gold_bonus": 0.0        # Alchemist
+	"lifesteal_flat": 0,       # Silver 5: Vampirism
+	"execution_threshold": 0.0, # Gold 3: Executioner
+	"luck": 0.0,               # Gold 10: Alchemist
+	"gold_bonus": 0.0,         # Gold 10: Alchemist
+	"armor": 0.0,              # Titan Form (Prism)
+	"multishot_chance": 0.0,   # Silver 11: Triple Shot
+	"waves": 1,                # Gold 6: Echoing Screams
+	"dash_charges": 1,         # Gold 8: Wind Walker
+	"thorns": 0.0              # Silver 9 & Gold 2
 }
 
 var active_gold_ids = []  
@@ -42,8 +43,7 @@ var tier_3_pool = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	load_augment_data() # Kart verilerini önden yüklemesi zarar vermez
-	# _setup_initial_mechanics() buradaydı, sildik.
+	load_augment_data()
 
 func initialize_game_start():
 	print("🎮 AugmentManager: Oyun başlatılıyor, mekanikler kuruluyor...")
@@ -51,49 +51,46 @@ func initialize_game_start():
 	emit_signal("level_changed", current_level)
 
 func _setup_initial_mechanics():
-	# Başlangıç statlarını sıfırla (Eğer main menüden tekrar giriliyorsa önemli)
 	current_level = 1
 	current_xp = 0
 	active_gold_ids = []
 	active_prism_ids = []
 	mechanic_levels = {}
 	
-	# --- KONTROL PANELİN ---
-	_force_unlock_augment("prism_1", 1) # Orbital Laser
-	# -----------------------
+	# Statları varsayılana döndür
+	player_stats = {
+		"max_hp": 100.0, "speed": 12.5, "damage_mult": 1.0, "attack_speed": 1.0,
+		"cooldown_reduction": 0.0, "pickup_range": 20.0, "freeze_duration": 4.0,
+		"attack_range": 0.20, "dash_cooldown": 3.0, "lifesteal_flat": 0,
+		"execution_threshold": 0.0, "luck": 0.0, "gold_bonus": 0.0, "armor": 0.0,
+		"multishot_chance": 0.0, "waves": 1, "dash_charges": 1, "thorns": 0.0
+	}
 	
-	# Gold 3 (Executioner) özel kontrolü
-	var found = false
-	for card in tier_2_pool:
-		if card.id == "gold_3":
-			player_stats["execution_threshold"] = card["levels"][0].get("threshold", 0.1)
-			found = true
-			break
-	if not found:
-		player_stats["execution_threshold"] = 0.1
-	emit_signal("mechanic_unlocked", "gold_3")
+	emit_signal("mechanic_unlocked", "init")
 
 func load_augment_data():
-	var file_path = "res://data/augments.json"
+	var file_path = "res://Data/augments.json"
 	if FileAccess.file_exists(file_path):
 		var file = FileAccess.open(file_path, FileAccess.READ)
-		var data = JSON.parse_string(file.get_as_text())
+		var text = file.get_as_text()
+		var data = JSON.parse_string(text)
 		if data:
 			tier_1_pool = data.get("tier_1_pool", [])
 			tier_2_pool = data.get("tier_2_pool", [])
 			tier_3_pool = data.get("tier_3_pool", [])
-
+		else:
+			push_error("AugmentManager: JSON parse hatası!")
+	else:
+		push_error("AugmentManager: augments.json bulunamadı!")
 
 func _force_unlock_augment(aug_id: String, level: int = 1):
 	mechanic_levels[aug_id] = level
 	
-	# 1. Rarity'sine göre doğru listeye kaydet
 	if aug_id.begins_with("gold"):
 		if not aug_id in active_gold_ids: active_gold_ids.append(aug_id)
 	elif aug_id.begins_with("prism"):
 		if not aug_id in active_prism_ids: active_prism_ids.append(aug_id)
 
-	# 2. JSON verisini bul ve özel ayarları (execution threshold vb.) otomatik çek
 	var found_card = null
 	for pool in [tier_1_pool, tier_2_pool, tier_3_pool]:
 		for card in pool:
@@ -102,17 +99,15 @@ func _force_unlock_augment(aug_id: String, level: int = 1):
 				break
 		if found_card: break
 
-	# 3. Eğer kart bulunduysa özel statları veya sinyalleri işle
 	if found_card:
-		if aug_id == "gold_3": # İnfaz eşiği gibi özel durumlar
-			player_stats["execution_threshold"] = found_card["levels"][level-1].get("threshold", 0.1)
-		
-		# Sinyali "call_deferred" ile gönderiyoruz ki sahneler tamamen yüklenmiş olsun
+		apply_augment_stats_only(found_card, level)
 		emit_signal.call_deferred("mechanic_unlocked", aug_id)
-		print("🚀 Başlangıç Mekaniği Hazır: ", aug_id, " Lv.", level)
-	else:
-		# Eğer pool henüz dolmadıysa (load_augment_data bitmediyse) minik bir hata basarız
-		push_warning("Uyarı: " + aug_id + " verisi bulunamadı, pool yüklenmemiş olabilir.")
+		print("🚀 Force Unlock: ", aug_id, " Lv.", level)
+
+func apply_augment_stats_only(card_data, level):
+	if card_data.get("id") == "gold_3":
+		player_stats["execution_threshold"] = card_data["levels"][level-1].get("threshold", 0.1)
+
 func start_game_selection():
 	current_level = 1
 	current_xp = 0
@@ -131,19 +126,11 @@ func level_up():
 	current_level += 1
 	current_xp -= max_xp
 	
-	# YENİ FORMÜL: Karesel Artış (Quadratic Scaling)
-	# Başlarda (Lv 1-5) oyunun akıcılığını bozmuyoruz.
-	# İleride (Lv 10+) makas açılıyor.
-	
 	if current_level < 5:
-		# Eskisi gibi yumuşak başlangıç (80, 120, 160...)
 		max_xp = 80 + (current_level * 40)
 	elif current_level < 20:
-		# Orta oyun: Biraz daha dikleşiyor
 		max_xp = 300 + ((current_level - 5) * 100)
 	else:
-		# Geç oyun: Artık her level çok değerli
-		# Formül: Sabit + (Level * Çarpan) + (Level^2 * Zorluk)
 		max_xp = 1800 + ((current_level - 20) * 250) + int(pow(current_level - 20, 1.5) * 10)
 
 	emit_signal("level_changed", current_level)
@@ -174,17 +161,21 @@ func generate_choices():
 	var selected_ids = []
 	for i in range(3):
 		var card = _pick_weighted_card()
-		if card and not card.id in selected_ids:
+		var safe_guard = 0
+		while card and (card.id in selected_ids) and safe_guard < 10:
+			card = _pick_weighted_card()
+			safe_guard += 1
+			
+		if card:
 			final_choices.append(_prepare_card(card))
 			selected_ids.append(card.id)
-		else:
-			var fallback = _pick_weighted_card()
-			if fallback: final_choices.append(_prepare_card(fallback))
+			
 	return final_choices
 
 func _pick_weighted_card():
 	var roll = randf()
 	var target_pool = []
+	
 	if current_level >= 10 and roll <= 0.10:
 		target_pool = tier_3_pool.filter(func(c): 
 			return (mechanic_levels.has(c.id) and mechanic_levels[c.id] < 4) or (not mechanic_levels.has(c.id) and active_prism_ids.size() < 3)
@@ -197,9 +188,12 @@ func _pick_weighted_card():
 	if target_pool.is_empty():
 		target_pool = tier_1_pool.filter(func(c):
 			if c.type == "stat": return true
-			if c.id == active_weapon_id: return mechanic_levels.get(c.id, 0) < 4
+			if c.id == active_weapon_id or c.id == "start_snowball" or c.id == "start_iceshard": 
+				return mechanic_levels.get(c.id, 0) < 4 and mechanic_levels.get(c.id, 0) > 0
 			return false
 		)
+		if target_pool.is_empty():
+			target_pool = tier_1_pool.filter(func(c): return c.type == "stat")
 
 	var total_weight = 0
 	var pool_with_weights = []
@@ -218,14 +212,18 @@ func _pick_weighted_card():
 	for item in pool_with_weights:
 		if random_weight < item.cumulative_weight:
 			return item.card
-	return target_pool[0] if not target_pool.is_empty() else null
+	return target_pool.pick_random() if not target_pool.is_empty() else null
 
 func _prepare_card(card):
-	var prepared = card.duplicate()
+	var prepared = card.duplicate(true)
 	if prepared.has("levels"):
 		var cur_lvl = mechanic_levels.get(prepared.id, 0)
-		prepared["desc"] = prepared["levels"][cur_lvl]["desc"]
-		prepared["name"] = prepared["name"] + " Lv." + str(cur_lvl + 1)
+		if cur_lvl < prepared["levels"].size():
+			prepared["desc"] = prepared["levels"][cur_lvl]["desc"]
+			prepared["name"] = prepared["name"] + " Lv." + str(cur_lvl + 1)
+		else:
+			prepared["desc"] = "MAX LEVEL"
+			prepared["name"] = prepared["name"] + " (MAX)"
 	return prepared
 
 func apply_augment(card_data):
@@ -241,37 +239,35 @@ func apply_augment(card_data):
 			active_weapon_id = a_id
 			mechanic_levels[a_id] = 1
 		else:
-			mechanic_levels[a_id] += 1
+			mechanic_levels[a_id] = mechanic_levels.get(a_id, 0) + 1
 		emit_signal("mechanic_unlocked", a_id)
 
 	elif type == "mechanic":
-		if not mechanic_levels.has(a_id):
-			mechanic_levels[a_id] = 1
-			if card_data.get("rarity") == "gold": active_gold_ids.append(a_id)
-			elif card_data.get("rarity") == "prismatic": active_prism_ids.append(a_id)
-		else:
-			mechanic_levels[a_id] += 1
+		var new_lvl = mechanic_levels.get(a_id, 0) + 1
+		mechanic_levels[a_id] = new_lvl
 		
-		if a_id == "gold_3":
-			var cur_lvl = mechanic_levels[a_id]
-			player_stats["execution_threshold"] = card_data["levels"][cur_lvl-1].get("threshold", 0.1)
+		if card_data.get("rarity") == "gold" and not a_id in active_gold_ids: 
+			active_gold_ids.append(a_id)
+		elif card_data.get("rarity") == "prismatic" and not a_id in active_prism_ids: 
+			active_prism_ids.append(a_id)
+		
+		if a_id == "gold_3" and card_data.has("levels"):
+			player_stats["execution_threshold"] = card_data["levels"][new_lvl-1].get("threshold", 0.1)
 			
 		emit_signal("mechanic_unlocked", a_id)
 
 	elif type == "stat":
 		var s_name = card_data.get("stat", "")
 		if player_stats.has(s_name):
-			player_stats[s_name] += card_data["val"]
-			# HEALTHY BLUBBER FIX: Max HP artınca canı da doldur
+			# Triple Shot Şans Fix (%10 -> 0.1)
+			var val = card_data["val"]
+			if s_name == "multishot_chance" and val > 1.0: val = val / 100.0
+			
+			player_stats[s_name] += val
+			
 			if s_name == "max_hp":
 				var player = get_tree().get_first_node_in_group("player")
 				if player and player.has_method("heal"):
 					player.heal(card_data["val"])
 			
 	get_tree().paused = false
-
-func _remove_from_pools(id):
-	var filter_func = func(c): return c.id != id
-	tier_1_pool = tier_1_pool.filter(filter_func)
-	tier_2_pool = tier_2_pool.filter(filter_func)
-	tier_3_pool = tier_3_pool.filter(filter_func)

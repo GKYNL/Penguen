@@ -15,50 +15,69 @@ signal health_changed(current_health, max_health)
 @onready var lifesteal_aura = get_node_or_null("VFX_Lifesteal")
 @onready var static_field_vfx = get_node_or_null("VFX_Static")
 
+# WeaponManager referansı
+@onready var weapon_manager = get_node_or_null("WeaponManager")
+
 var current_hp: float = 100.0
 var can_dash: bool = true
 var dash_speed_bonus: float = 1.0
-
-# YENİ: Çift Dash için şarj sistemi
 var current_dash_charges: int = 1
+var aura_timer: Timer
 
 func _ready() -> void:
 	add_to_group("player")
 	current_hp = AugmentManager.player_stats["max_hp"]
 	health_changed.emit(current_hp, AugmentManager.player_stats["max_hp"])
 	
-	# Başlangıç dash hakkını al
 	current_dash_charges = AugmentManager.player_stats.get("dash_charges", 1)
 
 	for vfx in [frost_aura, lifesteal_aura, static_field_vfx]:
 		if vfx: vfx.hide()
+	
+	aura_timer = Timer.new()
+	aura_timer.wait_time = 0.5
+	aura_timer.autostart = true
+	aura_timer.timeout.connect(_process_active_auras)
+	add_child(aura_timer)
 
 func _physics_process(delta: float) -> void:
-	_handle_look_at()
+	_handle_look_at(delta) 
 	_handle_movement_logic(delta)
 	_manage_aura_visibility() 
-	_handle_titan_form() # Büyüme kontrolü
+	_handle_titan_form() 
 	move_and_slide()
 
-func _handle_titan_form() -> void:
-	# TITAN FORM (Prism 3): Büyüme mekaniği
-	if AugmentManager.mechanic_levels.has("prism_3"):
-		var scale_bonus = 1.0 + (AugmentManager.mechanic_levels["prism_3"] * 0.15)
-		if abs(scale.x - scale_bonus) > 0.01:
-			scale = scale.lerp(Vector3.ONE * scale_bonus, 0.1)
+func _handle_look_at(delta: float) -> void:
+	var target_dir: Vector3 = Vector3.ZERO
+	var wm = weapon_manager
+	
+	if not is_instance_valid(wm):
+		wm = get_tree().get_first_node_in_group("weapon_manager")
+	
+	if is_instance_valid(wm):
+		if wm.has_method("_find_closest_enemy"):
+			var enemy = wm._find_closest_enemy()
+			if is_instance_valid(enemy) and enemy.current_hp > 0:
+				target_dir = (enemy.global_position - global_position).normalized()
 
-func _handle_look_at() -> void:
-	var mouse_pos = get_viewport().get_mouse_position()
-	var from = camera.project_ray_origin(mouse_pos)
-	var to = from + camera.project_ray_normal(mouse_pos) * 1000
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(from, to, 1, [get_rid()])
-	var result = space_state.intersect_ray(query)
-	if result:
-		var look_dir = Vector3(result.position.x - global_position.x, 0, result.position.z - global_position.z)
-		if look_dir.length() > 0.1:
-			body_mesh.look_at(global_position + look_dir, Vector3.UP, true)
-			body_mesh.rotation.x = 0; body_mesh.rotation.z = 0
+	if target_dir.length() < 0.1:
+		if velocity.length() > 0.1:
+			target_dir = velocity.normalized()
+	
+	if target_dir.length() > 0.1:
+		target_dir.y = 0
+		
+		var target_pos = global_position + target_dir
+		if global_position.distance_to(target_pos) > 0.01:
+			var look_transform = body_mesh.global_transform.looking_at(target_pos, Vector3.UP)
+			
+			# DÜZELTME: Karakterin modelini 180 derece (PI radyan) döndürerek önünü hedefe bakacak hale getiriyoruz
+			look_transform.basis = look_transform.basis.rotated(Vector3.UP, PI)
+			
+			body_mesh.global_transform = body_mesh.global_transform.interpolate_with(look_transform, delta * 30.0)
+			
+			body_mesh.rotation.x = 0
+			body_mesh.rotation.z = 0
 
 func _handle_movement_logic(delta: float) -> void:
 	var base_speed = AugmentManager.player_stats["speed"]
@@ -77,7 +96,8 @@ func _handle_movement_logic(delta: float) -> void:
 	if direction.length() > 0: horizontal_velocity = horizontal_velocity.move_toward(target_velocity, acceleration * delta)
 	else: horizontal_velocity = horizontal_velocity.move_toward(Vector3.ZERO, deceleration * delta)
 	
-	velocity.x = horizontal_velocity.x; velocity.z = horizontal_velocity.z
+	velocity.x = horizontal_velocity.x
+	velocity.z = horizontal_velocity.z
 	
 	if Input.is_action_just_pressed("dash"): execute_dash()
 	
@@ -85,14 +105,11 @@ func _handle_movement_logic(delta: float) -> void:
 	animation_tree["parameters/VelocitySpace/blend_position"] = lerpf(animation_tree["parameters/VelocitySpace/blend_position"], anim_speed_ratio, delta * 10.0)
 
 func execute_dash() -> void:
-	# WIND WALKER: Dash Charge ve Cooldown Sistemi
 	var max_charges = AugmentManager.player_stats.get("dash_charges", 1)
 	if AugmentManager.mechanic_levels.get("gold_8", 0) >= 3: max_charges += 1
 	
-	if current_dash_charges <= 0: return # Hakkımız yoksa dash atma
-	
+	if current_dash_charges <= 0: return 
 	current_dash_charges -= 1
-	can_dash = false # Anlık kilit (animasyon vs. için)
 	
 	if wind_vfx_scene:
 		var wind = wind_vfx_scene.instantiate()
@@ -104,65 +121,88 @@ func execute_dash() -> void:
 		tw.tween_property(wind, "global_position", global_position + dash_dir * 8.0, 0.4)
 		tw.parallel().tween_property(wind, "scale", Vector3.ZERO, 0.4).set_delay(0.2)
 		tw.finished.connect(wind.queue_free)
+		
+		if AugmentManager.mechanic_levels.get("gold_8", 0) >= 2:
+			var projectiles = get_tree().get_nodes_in_group("EnemyProjectile")
+			for proj in projectiles:
+				if proj.global_position.distance_to(global_position) < 5.0: proj.queue_free()
 
-	velocity.x *= 3.0; velocity.z *= 3.0
+	velocity.x *= 3.0
+	velocity.z *= 3.0
 	dash_speed_bonus = 1.6
 	var tw_bonus = create_tween()
 	tw_bonus.tween_property(self, "dash_speed_bonus", 1.0, 0.8).set_ease(Tween.EASE_OUT)
 	
-	# MANA FLOW: Cooldown Reduction Uygula
-	var base_cd = max(0.4, 3.0 + AugmentManager.player_stats.get("dash_cooldown", 0.0))
-	var cdr = AugmentManager.player_stats.get("cooldown_reduction", 0.0)
-	var final_cd = base_cd * (1.0 - cdr)
+	var final_cd = (3.0 + AugmentManager.player_stats.get("dash_cooldown", 0.0)) * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0))
+	await get_tree().create_timer(max(0.4, final_cd)).timeout
+	if current_dash_charges < max_charges: current_dash_charges += 1
+
+func _handle_titan_form() -> void:
+	if AugmentManager.mechanic_levels.has("prism_3"):
+		var scale_bonus = 1.0 + (AugmentManager.mechanic_levels["prism_3"] * 0.15)
+		scale = scale.lerp(Vector3.ONE * scale_bonus, 0.1)
+
+func _process_active_auras():
+	var space_state = get_world_3d().direct_space_state
+	var query = PhysicsShapeQueryParameters3D.new()
+	var shape = SphereShape3D.new()
+	shape.radius = 6.0
+	query.shape = shape
+	query.transform = global_transform
+	query.collision_mask = 2
 	
-	# Dash dolumu için bekle
-	await get_tree().create_timer(final_cd).timeout
+	if AugmentManager.mechanic_levels.has("gold_7"):
+		var results = space_state.intersect_shape(query, 16)
+		var damage_tick = 5.0
+		var heal_tick = 0
+		var lvl = AugmentManager.mechanic_levels["gold_7"]
+		var lifesteal_pct = [0.02, 0.05, 0.08, 0.12][lvl-1]
+		for res in results:
+			if res.collider.has_method("take_damage"):
+				res.collider.take_damage(damage_tick)
+				heal_tick += damage_tick * lifesteal_pct
+		if heal_tick > 0: heal(heal_tick)
 	
-	if current_dash_charges < max_charges:
-		current_dash_charges += 1
+	if AugmentManager.mechanic_levels.has("gold_9"):
+		var results = space_state.intersect_shape(query, 12)
+		var stun_chance = 0.2 + (AugmentManager.mechanic_levels["gold_9"] * 0.1)
+		for res in results:
+			if res.collider.has_method("apply_status"):
+				if randf() < stun_chance: res.collider.apply_status("stun", 0.5)
+				else: res.collider.apply_status("shock", 1.0)
+	
+	if AugmentManager.mechanic_levels.has("gold_2"):
+		var results = space_state.intersect_shape(query, 12)
+		var slow_amount = [0.2, 0.4, 0.5, 0.7][AugmentManager.mechanic_levels["gold_2"]-1]
+		for res in results:
+			if res.collider.has_method("apply_slow"): res.collider.apply_slow(slow_amount, 0.6)
 
 func _manage_aura_visibility() -> void:
-	if AugmentManager.mechanic_levels.has("gold_2") and frost_aura:
-		if not frost_aura.visible:
-			frost_aura.show()
-			_animate_vfx_entry(frost_aura)
-	
-	if AugmentManager.mechanic_levels.has("gold_7") and lifesteal_aura:
-		if not lifesteal_aura.visible:
-			lifesteal_aura.show()
-			_animate_vfx_entry(lifesteal_aura)
-
-	if AugmentManager.mechanic_levels.has("gold_9") and static_field_vfx:
-		if not static_field_vfx.visible:
-			static_field_vfx.show()
-			_animate_vfx_entry(static_field_vfx)
+	if AugmentManager.mechanic_levels.has("gold_2") and frost_aura: if not frost_aura.visible: frost_aura.show(); _animate_vfx_entry(frost_aura)
+	if AugmentManager.mechanic_levels.has("gold_7") and lifesteal_aura: if not lifesteal_aura.visible: lifesteal_aura.show(); _animate_vfx_entry(lifesteal_aura)
+	if AugmentManager.mechanic_levels.has("gold_9") and static_field_vfx: if not static_field_vfx.visible: static_field_vfx.show(); _animate_vfx_entry(static_field_vfx)
 
 func _animate_vfx_entry(node):
 	node.scale = Vector3.ZERO
 	var tw = create_tween()
-	tw.tween_property(node, "scale", node.scale, 0.5).from(Vector3.ZERO).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(node, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 func take_damage(amount: float) -> void:
-	# THORNS: Optimize edilmiş fizik sorgusu
-	if AugmentManager.mechanic_levels.get("gold_2", 0) >= 3:
+	var thorns_dmg = AugmentManager.player_stats.get("thorns", 0.0)
+	if thorns_dmg > 0:
 		var space_state = get_world_3d().direct_space_state
 		var query = PhysicsShapeQueryParameters3D.new()
 		var shape = SphereShape3D.new()
-		shape.radius = 5.0
+		shape.radius = 4.0
 		query.shape = shape
 		query.transform = global_transform
-		var results = space_state.intersect_shape(query, 24)
-		
+		query.collision_mask = 2
+		var results = space_state.intersect_shape(query, 8)
 		for result in results:
-			var collider = result.collider
-			if collider.is_in_group("Enemies") and collider.has_method("take_damage"):
-				collider.take_damage(35.0)
+			if result.collider.has_method("take_damage"): result.collider.take_damage(thorns_dmg)
 				
 	current_hp = clamp(current_hp - amount, 0, AugmentManager.player_stats["max_hp"])
 	health_changed.emit(current_hp, AugmentManager.player_stats["max_hp"])
-	
-	if current_hp <= 0:
-		print("Player Died") # Buraya oyun bitiş ekranı gelir
 
 func heal(amount: float) -> void:
 	current_hp = clamp(current_hp + amount, 0, AugmentManager.player_stats["max_hp"])

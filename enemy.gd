@@ -8,16 +8,13 @@ const STAGE_COLORS := {
 }
 const FROZEN_COLOR := Color(0.267, 0.655, 1.0, 1.0)
 
-var damage_accumulator: float = 0.0
 var is_dying: bool = false
 
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var player = get_tree().get_first_node_in_group("player")
 @onready var execution_mark = get_node_or_null("ExecutionMark")
-@onready var label_3d: Label3D = $Label3D
 
 var logic_timer: Timer
-var damage_display_timer: Timer
 
 @export var explosion_vfx_scene: PackedScene 
 @export var xp_orb_scene: PackedScene 
@@ -41,27 +38,28 @@ var is_elite := false
 var is_frozen := false
 var can_attack := true
 var type: EnemyType = EnemyType.MELEE
-var base_speed: float = 5.0
+
+# Yavaşlatma Değişkenleri
+var current_slow_factor: float = 0.0
+var slow_timer: Timer
 
 func _ready():
 	add_to_group("Enemies")
-	base_speed = movement_speed
 	setup_stats_by_stage()
 	update_visuals()
 	if execution_mark: execution_mark.hide()
-	if label_3d: label_3d.text = ""
-
+	
 	logic_timer = Timer.new()
 	add_child(logic_timer)
 	logic_timer.wait_time = 0.1
 	logic_timer.timeout.connect(_on_logic_tick)
 	logic_timer.start()
-
-	damage_display_timer = Timer.new()
-	add_child(damage_display_timer)
-	damage_display_timer.wait_time = 1.0
-	damage_display_timer.timeout.connect(_on_damage_display_tick)
-	damage_display_timer.start()
+	
+	# Slow reset timer
+	slow_timer = Timer.new()
+	slow_timer.one_shot = true
+	add_child(slow_timer)
+	slow_timer.timeout.connect(func(): current_slow_factor = 0.0)
 
 func _physics_process(delta):
 	if current_hp <= 0 or is_dying or is_frozen: 
@@ -80,11 +78,8 @@ func _on_logic_tick():
 	var dist = diff.length()
 	var dir = diff.normalized()
 
-	var speed_mult = 1.0
-	if AugmentManager.mechanic_levels.has("gold_2") and dist < 6.0:
-		speed_mult = 1.0 - [0.2, 0.4, 0.5, 0.7][AugmentManager.mechanic_levels["gold_2"]-1]
-	
-	var final_speed = movement_speed * speed_mult
+	# HIZ HESABI: Yavaşlatma faktörünü uygula
+	var final_speed = movement_speed * (1.0 - current_slow_factor)
 
 	if type == EnemyType.ARCHER:
 		var keep_dist = 12.0
@@ -106,109 +101,91 @@ func _on_logic_tick():
 			velocity.z = dir.z * final_speed
 
 	if velocity.length() > 0.1:
-		look_at(global_position + dir, Vector3.UP)
+		var look_target = global_position + dir
+		if global_position.distance_to(look_target) > 0.1:
+			look_at(look_target, Vector3.UP)
 
-func _on_damage_display_tick():
-	if damage_accumulator > 0 and not is_dying:
-		_show_damage_numbers(damage_accumulator)
-		damage_accumulator = 0.0
+# YENİ EKLENEN: Frost Armor buradan yavaşlatacak
+func apply_slow(amount: float, duration: float):
+	if is_elite: amount *= 0.5 
+	if amount > current_slow_factor:
+		current_slow_factor = amount
+	slow_timer.start(duration)
 
-func take_damage(dmg):
+func take_damage(dmg: float):
 	if current_hp <= 0 or is_dying: return
 	
 	var final_dmg = dmg
-	
-	# GIANT SLAYER (Gold 5): Elitlere ekstra hasar
-	if is_elite and AugmentManager.mechanic_levels.has("gold_5"):
-		var bonus = [0.2, 0.4, 0.6, 1.0][AugmentManager.mechanic_levels["gold_5"]-1]
-		final_dmg *= (1.0 + bonus)
-	
+	_show_damage_numbers(final_dmg, Color.WHITE)
 	current_hp -= final_dmg
-	damage_accumulator += final_dmg
 	
-	if AugmentManager.mechanic_levels.has("gold_3") and current_hp > 0:
+	if AugmentManager.mechanic_levels.has("gold_3"):
 		var threshold = AugmentManager.player_stats.get("execution_threshold", 0.0)
-		if current_hp <= max_hp * threshold:
+		if current_hp > 0 and current_hp <= max_hp * threshold:
 			_execute_enemy()
 			return
 
-	if current_hp <= 0: pre_die()
-
-func pre_die():
-	if is_dying: return
-	is_dying = true
-	collision_layer = 0
-	collision_mask = 0
-	logic_timer.stop()
-	damage_display_timer.stop()
-	if damage_accumulator > 0: _show_damage_numbers(damage_accumulator)
-	await get_tree().create_timer(0.5).timeout
-	die()
+	if current_hp <= 0: 
+		pre_die()
 
 func _show_damage_numbers(amount: float, color: Color = Color.WHITE):
-	if not label_3d: return
-	label_3d.text = str(ceil(amount))
-	label_3d.modulate = color
-	label_3d.position.y = 2.0
-	label_3d.modulate.a = 1.0
+	if not has_node("Label3D"): return
+	var label = $Label3D.duplicate()
+	add_child(label)
+	label.show()
+	label.text = str(ceil(amount))
+	label.modulate = color
+	
+	var random_x = randf_range(-1.0, 1.0)
+	label.position = Vector3(random_x, 2.0, 0)
+	
 	var tw = create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(label_3d, "position:y", 3.5, 0.4)
-	tw.tween_property(label_3d, "modulate:a", 0.0, 0.4)
+	tw.tween_property(label, "position:y", 4.0, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(label, "position:x", random_x * 2.0, 0.5)
+	tw.tween_property(label, "modulate:a", 0.0, 0.5).set_delay(0.2)
+	tw.finished.connect(label.queue_free)
 
 func _execute_enemy():
 	if is_dying: return
 	is_dying = true
 	current_hp = 0
-	collision_layer = 0
-	logic_timer.stop()
+	
 	if execution_mark: 
 		execution_mark.show()
 		var tw = create_tween()
-		tw.tween_property(execution_mark, "scale", Vector3.ONE * 1.5, 0.1)
-		tw.tween_property(execution_mark, "scale", Vector3.ONE, 0.1)
+		tw.tween_property(execution_mark, "scale", Vector3.ONE * 2.0, 0.1)
+		tw.tween_property(execution_mark, "scale", Vector3.ONE, 0.2)
 	_show_damage_numbers(666, Color.RED)
-	await get_tree().create_timer(0.5).timeout
-	die()
+	Engine.time_scale = 0.05
+	await get_tree().create_timer(0.01).timeout 
+	Engine.time_scale = 1.0
+	pre_die()
+
+func pre_die():
+	is_dying = true
+	collision_layer = 0
+	collision_mask = 0
+	logic_timer.stop()
+	var tw = create_tween()
+	tw.tween_property(self, "scale", Vector3.ZERO, 0.3).set_ease(Tween.EASE_IN)
+	tw.finished.connect(die)
 
 func die():
-	if AugmentManager.player_stats.get("lifesteal_flat", 0) > 0:
-		if player and player.has_method("heal"): player.heal(AugmentManager.player_stats["lifesteal_flat"])
+	# DÜZELTME: WeaponManager'ı bulup ona haber ver
+	var wm = get_tree().get_first_node_in_group("weapon_manager")
+	if wm and wm.has_method("on_enemy_killed"):
+		wm.on_enemy_killed(self)
 	
-	# CHAIN REACTION (Gold 4)
-	if AugmentManager.mechanic_levels.has("gold_4"):
-		var chance = [0.1, 0.2, 0.3, 0.5][AugmentManager.mechanic_levels["gold_4"]-1]
-		if randf() < chance: 
-			_explode()
-			return
-
-	# ALCHEMIST (Gold 10): İksir düşürme şansı
-	if AugmentManager.mechanic_levels.has("gold_10"):
-		var luck = AugmentManager.player_stats.get("luck", 0.0)
-		if randf() < (0.05 + luck * 0.01):
-			if player and player.has_method("heal"): player.heal(20) # Şimdilik direkt heal
-
-	spawn_xp_reward()
-	queue_free()
-
-func _explode():
-	if not explosion_vfx_scene: 
-		spawn_xp_reward()
-		queue_free()
-		return
-	var vfx = explosion_vfx_scene.instantiate()
-	get_tree().root.add_child(vfx)
-	vfx.global_position = global_position
-	if vfx.has_method("play_effect"): vfx.play_effect(damage)
 	spawn_xp_reward()
 	queue_free()
 
 func spawn_xp_reward():
-	if xp_orb_scene == null: return
-	var orb = xp_orb_scene.instantiate()
-	get_tree().root.add_child(orb)
-	orb.global_position = global_position + Vector3(0, 1.0, 0)
-	orb.xp_value = xp_reward
+	if xp_orb_scene:
+		var orb = xp_orb_scene.instantiate()
+		get_tree().root.add_child(orb)
+		orb.global_position = global_position + Vector3(0, 0.5, 0)
+		if "xp_value" in orb: orb.xp_value = xp_reward
 
 func setup_stats_by_stage():
 	max_hp = 25.0 * stage 
@@ -225,11 +202,14 @@ func update_visuals():
 	var mat := StandardMaterial3D.new()
 	if is_frozen:
 		mat.albedo_color = FROZEN_COLOR
-		mat.emission_enabled = true; mat.emission = FROZEN_COLOR * 2.0
+		mat.emission_enabled = true
+		mat.emission = FROZEN_COLOR * 2.0
 	else:
 		var color :Color = STAGE_COLORS.get(stage, Color.WHITE)
 		mat.albedo_color = color
-		if is_elite: mat.emission_enabled = true; mat.emission = color * 4.0
+		if is_elite: 
+			mat.emission_enabled = true
+			mat.emission = color * 2.0
 		if type == EnemyType.ARCHER: mesh.scale = Vector3(0.7, 1.3, 0.7)
 	mesh.material_override = mat
 
@@ -255,7 +235,7 @@ func shoot_at_player():
 	proj.global_position = global_position + Vector3(0, 1.5, 0)
 	proj.direction = (player.global_position - proj.global_position).normalized()
 	proj.damage = damage
-	await get_tree().create_timer(attack_cooldown * 2.0).timeout
+	await get_tree().create_timer(attack_cooldown).timeout
 	can_attack = true
 
 func attack_player():
