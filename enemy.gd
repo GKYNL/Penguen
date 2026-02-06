@@ -2,28 +2,23 @@ extends CharacterBody3D
 
 enum EnemyType { MELEE, ARCHER }
 
-# --- SABİTLER (Eksik olanlar buraya eklendi) ---
 const STAGE_COLORS := {
 	1: Color.DARK_GOLDENROD, 2: Color.GREEN, 3: Color.BLUE,
 	4: Color.PURPLE, 5: Color.ORANGE, 6: Color.RED, 7: Color.BLACK
 }
 const FROZEN_COLOR := Color(0.267, 0.655, 1.0, 1.0)
 
-# --- TOPLAMA SİSTEMİ ---
 var damage_accumulator: float = 0.0
 var is_dying: bool = false
 
-# --- NODE REFERANSLARI ---
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var player = get_tree().get_first_node_in_group("player")
 @onready var execution_mark = get_node_or_null("ExecutionMark")
 @onready var label_3d: Label3D = $Label3D
 
-# --- OPTİMİZASYON İÇİN TİMERLAR ---
 var logic_timer: Timer
 var damage_display_timer: Timer
 
-# --- EXPORTLAR ---
 @export var explosion_vfx_scene: PackedScene 
 @export var xp_orb_scene: PackedScene 
 @export var projectile_scene: PackedScene 
@@ -56,14 +51,12 @@ func _ready():
 	if execution_mark: execution_mark.hide()
 	if label_3d: label_3d.text = ""
 
-	# MANTIKSAL TİMER: Saniyede 10 kez karar vermesi yeterli
 	logic_timer = Timer.new()
 	add_child(logic_timer)
 	logic_timer.wait_time = 0.1
 	logic_timer.timeout.connect(_on_logic_tick)
 	logic_timer.start()
 
-	# HASAR GÖSTERGE TİMERI: Saniyede 1 kez
 	damage_display_timer = Timer.new()
 	add_child(damage_display_timer)
 	damage_display_timer.wait_time = 1.0
@@ -74,17 +67,14 @@ func _physics_process(delta):
 	if current_hp <= 0 or is_dying or is_frozen: 
 		velocity = Vector3.ZERO
 		return
-	
 	if not is_on_floor(): 
 		velocity.y -= gravity * delta * 4.0
 	else:
 		velocity.y = 0
-		
 	move_and_slide()
 
 func _on_logic_tick():
 	if is_dying or is_frozen or player == null: return
-
 	var diff = player.global_position - global_position
 	diff.y = 0
 	var dist = diff.length()
@@ -106,9 +96,7 @@ func _on_logic_tick():
 			velocity.z = -dir.z * final_speed * 0.5
 		else:
 			velocity.x = 0; velocity.z = 0
-		
-		if can_attack and dist <= 18.0:
-			shoot_at_player()
+		if can_attack and dist <= 18.0: shoot_at_player()
 	else:
 		if dist <= attack_range:
 			velocity.x = 0; velocity.z = 0
@@ -128,8 +116,15 @@ func _on_damage_display_tick():
 func take_damage(dmg):
 	if current_hp <= 0 or is_dying: return
 	
-	current_hp -= dmg
-	damage_accumulator += dmg
+	var final_dmg = dmg
+	
+	# GIANT SLAYER (Gold 5): Elitlere ekstra hasar
+	if is_elite and AugmentManager.mechanic_levels.has("gold_5"):
+		var bonus = [0.2, 0.4, 0.6, 1.0][AugmentManager.mechanic_levels["gold_5"]-1]
+		final_dmg *= (1.0 + bonus)
+	
+	current_hp -= final_dmg
+	damage_accumulator += final_dmg
 	
 	if AugmentManager.mechanic_levels.has("gold_3") and current_hp > 0:
 		var threshold = AugmentManager.player_stats.get("execution_threshold", 0.0)
@@ -137,19 +132,16 @@ func take_damage(dmg):
 			_execute_enemy()
 			return
 
-	if current_hp <= 0: 
-		pre_die()
+	if current_hp <= 0: pre_die()
 
 func pre_die():
 	if is_dying: return
 	is_dying = true
-	
+	collision_layer = 0
+	collision_mask = 0
 	logic_timer.stop()
 	damage_display_timer.stop()
-	
-	if damage_accumulator > 0:
-		_show_damage_numbers(damage_accumulator)
-	
+	if damage_accumulator > 0: _show_damage_numbers(damage_accumulator)
 	await get_tree().create_timer(0.5).timeout
 	die()
 
@@ -168,6 +160,7 @@ func _execute_enemy():
 	if is_dying: return
 	is_dying = true
 	current_hp = 0
+	collision_layer = 0
 	logic_timer.stop()
 	if execution_mark: 
 		execution_mark.show()
@@ -182,11 +175,18 @@ func die():
 	if AugmentManager.player_stats.get("lifesteal_flat", 0) > 0:
 		if player and player.has_method("heal"): player.heal(AugmentManager.player_stats["lifesteal_flat"])
 	
+	# CHAIN REACTION (Gold 4)
 	if AugmentManager.mechanic_levels.has("gold_4"):
 		var chance = [0.1, 0.2, 0.3, 0.5][AugmentManager.mechanic_levels["gold_4"]-1]
 		if randf() < chance: 
 			_explode()
 			return
+
+	# ALCHEMIST (Gold 10): İksir düşürme şansı
+	if AugmentManager.mechanic_levels.has("gold_10"):
+		var luck = AugmentManager.player_stats.get("luck", 0.0)
+		if randf() < (0.05 + luck * 0.01):
+			if player and player.has_method("heal"): player.heal(20) # Şimdilik direkt heal
 
 	spawn_xp_reward()
 	queue_free()
@@ -229,10 +229,23 @@ func update_visuals():
 	else:
 		var color :Color = STAGE_COLORS.get(stage, Color.WHITE)
 		mat.albedo_color = color
-		if is_elite: 
-			mat.emission_enabled = true; mat.emission = color * 4.0
+		if is_elite: mat.emission_enabled = true; mat.emission = color * 4.0
 		if type == EnemyType.ARCHER: mesh.scale = Vector3(0.7, 1.3, 0.7)
 	mesh.material_override = mat
+
+func make_elite():
+	is_elite = true
+	setup_stats_by_stage()
+	scale = Vector3(1.8, 1.8, 1.8)
+	movement_speed *= 0.8
+	update_visuals()
+
+func make_archer():
+	type = EnemyType.ARCHER
+	attack_range = 15.0
+	attack_cooldown = 2.0
+	movement_speed *= 1.1
+	update_visuals()
 
 func shoot_at_player():
 	if not can_attack or is_frozen or projectile_scene == null or player == null: return

@@ -8,7 +8,7 @@
 [ext_resource type="Shader" uid="uid://dajgnmvco2ovf" path="res://shaders/vfx_dash.gdshader" id="7_k7tm4"]
 [ext_resource type="PackedScene" uid="uid://0dypebitt7j" path="res://vfx/lightning.tscn" id="7_ukons"]
 [ext_resource type="Shader" uid="uid://i3r0vkesjurn" path="res://shaders/vfx_tornado.gdshader" id="8_n3yy8"]
-[ext_resource type="Shader" uid="uid://dg21d1fy35y8i" path="res://shaders/vfx_laser.gdshader" id="9_n4shl"]
+[ext_resource type="PackedScene" uid="uid://3a42grex4dp1" path="res://vfx/OrbitalLaser.tscn" id="8_n4shl"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_k7tm4"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -67,31 +67,6 @@ bottom_radius = 1.618
 height = 13.732
 radial_segments = 32
 rings = 16
-cap_top = false
-cap_bottom = false
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_n4shl"]
-frequency = 0.05
-fractal_type = 2
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_k7tm4"]
-noise = SubResource("FastNoiseLite_n4shl")
-seamless = true
-seamless_blend_skirt = 1.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_k7tm4"]
-render_priority = 0
-shader = ExtResource("9_n4shl")
-shader_parameter/core_color = Color(1.92523e-07, 0.7365672, 0.77667767, 1)
-shader_parameter/glow_color = Color(0.5019608, 1, 1, 1)
-shader_parameter/thickness = 0.4
-shader_parameter/beam_speed = 8.0
-shader_parameter/flicker_speed = 20.0
-shader_parameter/noise_tex = SubResource("NoiseTexture2D_k7tm4")
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_ukons"]
-material = SubResource("ShaderMaterial_k7tm4")
-height = 39.988
 cap_top = false
 cap_bottom = false
 
@@ -187,9 +162,8 @@ transform = Transform3D(0.22532515, 0, -0.97428364, 0, 1, 0, 0.97428364, 0, 0.22
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.606857, 10.362707, 51.862724)
 mesh = SubResource("CylinderMesh_k7tm4")
 
-[node name="laser" type="MeshInstance3D" parent="." unique_id=202378874]
+[node name="laser" parent="." unique_id=374758078 instance=ExtResource("8_n4shl")]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 19.079403, 7.7723393, 24.42902)
-mesh = SubResource("CylinderMesh_ukons")
 
 [node name="dash" type="GPUParticles3D" parent="." unique_id=1281859358]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, -22.94718, 6.6485653, -0.4353323)

@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://3a42grex4dp1"]
+
+[ext_resource type="Shader" uid="uid://dg21d1fy35y8i" path="res://shaders/vfx_laser.gdshader" id="1_auaqg"]
+[ext_resource type="Script" uid="uid://c48ysjjlw2228" path="res://Scripts/orbital_laser.gd" id="2_r260l"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_n4shl"]
+frequency = 0.05
+fractal_type = 2
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_k7tm4"]
+noise = SubResource("FastNoiseLite_n4shl")
+seamless = true
+seamless_blend_skirt = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_k7tm4"]
+render_priority = 0
+shader = ExtResource("1_auaqg")
+shader_parameter/core_color = Color(1.92523e-07, 0.7365672, 0.77667767, 1)
+shader_parameter/glow_color = Color(0.5019608, 1, 1, 1)
+shader_parameter/thickness = 0.4
+shader_parameter/beam_speed = 8.0
+shader_parameter/flicker_speed = 20.0
+shader_parameter/noise_tex = SubResource("NoiseTexture2D_k7tm4")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ukons"]
+material = SubResource("ShaderMaterial_k7tm4")
+height = 39.988
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_auaqg"]
+size = Vector3(1, 38.49121, 1)
+
+[node name="laser" type="MeshInstance3D" unique_id=374758078]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_ukons")
+script = ExtResource("2_r260l")
+
+[node name="Area3D" type="Area3D" parent="." unique_id=1283206352]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" unique_id=1308400035]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8808594, 0)
+shape = SubResource("BoxShape3D_auaqg")

@@ -11,6 +11,7 @@ var current_xp = 0
 var max_xp = 100
 var active_weapon_id = ""
 
+# TÜM EKSİK STATLAR EKLENDİ
 var player_stats = {
 	"max_hp": 100.0,
 	"speed": 12.5,
@@ -22,7 +23,13 @@ var player_stats = {
 	"attack_range": 0.20,
 	"dash_cooldown": 3.0,
 	"lifesteal_flat": 0,
-	"execution_threshold": 0.0 
+	"execution_threshold": 0.0,
+	"luck": 0.0,             # Alchemist
+	"armor": 0.0,            # Titan Form (İleride kullanılabilir)
+	"multishot_chance": 0.0, # Triple Shot
+	"waves": 1,              # Echoing Screams
+	"dash_charges": 1,       # Wind Walker
+	"gold_bonus": 0.0        # Alchemist
 }
 
 var active_gold_ids = []  
@@ -35,9 +42,7 @@ var tier_3_pool = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	# 1. Önce veriyi yükle
 	load_augment_data()
-	# 2. Veri yüklendikten sonra başlangıç yeteneğini kur
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
 
@@ -52,24 +57,19 @@ func load_augment_data():
 			tier_3_pool = data.get("tier_3_pool", [])
 
 func _setup_initial_mechanics():
-	mechanic_levels["gold_9"] = 4
-	if not "gold_9" in active_gold_ids:
-		active_gold_ids.append("gold_9")
+	mechanic_levels["prism_1"] = 4
+	if not "prism_1" in active_gold_ids:
+		active_gold_ids.append("prism_1")
 	
-	# Havuzdan gold_3 verisini bul ve JSON'daki 'threshold' değerini çek
 	var found = false
 	for card in tier_2_pool:
 		if card.id == "gold_3":
-			# FIX: JSON'daki anahtar ismin "threshold" olduğu için onu çekiyoruz
 			player_stats["execution_threshold"] = card["levels"][0].get("threshold", 0.1)
 			found = true
 			break
-	
 	if not found:
 		player_stats["execution_threshold"] = 0.1
-	
 	emit_signal("mechanic_unlocked", "gold_3")
-	print("\n=== DEBUG: JSON'DAN ÇEKİLEN THRESHOLD: ", player_stats["execution_threshold"], " ===")
 
 func start_game_selection():
 	current_level = 1
@@ -88,19 +88,11 @@ func add_xp(amount):
 func level_up():
 	current_level += 1
 	current_xp -= max_xp
-	
-	# YENİ PACE FORMÜLÜ:
-	# İlk 5 level çok hızlı geçsin (80 + 40*level)
-	# Sonrasında kavisli artsın ama duvara toslamasın
 	if current_level < 5:
 		max_xp = 80 + (current_level * 40) 
 	else:
-		# Level 5'ten sonra biraz daha zorlaşsın
 		max_xp = 250 + ((current_level - 5) * 80)
 	
-	emit_signal("level_changed", current_level)
-	# Dinamik karesel artış
-	max_xp = 100 + (current_level * current_level * 15) + (current_level * 50)
 	emit_signal("level_changed", current_level)
 	emit_signal("xp_changed", current_xp, max_xp)
 	var choices = generate_choices()
@@ -207,7 +199,6 @@ func apply_augment(card_data):
 		else:
 			mechanic_levels[a_id] += 1
 		
-		# Seviye atladığında JSON'daki 'threshold' değerini güncelle
 		if a_id == "gold_3":
 			var cur_lvl = mechanic_levels[a_id]
 			player_stats["execution_threshold"] = card_data["levels"][cur_lvl-1].get("threshold", 0.1)
@@ -218,6 +209,11 @@ func apply_augment(card_data):
 		var s_name = card_data.get("stat", "")
 		if player_stats.has(s_name):
 			player_stats[s_name] += card_data["val"]
+			# HEALTHY BLUBBER FIX: Max HP artınca canı da doldur
+			if s_name == "max_hp":
+				var player = get_tree().get_first_node_in_group("player")
+				if player and player.has_method("heal"):
+					player.heal(card_data["val"])
 			
 	get_tree().paused = false
 

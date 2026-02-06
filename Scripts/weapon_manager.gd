@@ -87,9 +87,20 @@ func _update_weapon_stats():
 	if not active_auto_weapon: return
 	var weapon_id = "start_" + active_auto_weapon
 	var lv_data = _get_weapon_level_data(weapon_id)
+	
 	if lv_data:
 		var comp = snowball_shooting_component if active_auto_weapon == "snowball" else ice_shard_shooting_component
-		attack_timer.wait_time = 1.0 / (lv_data.get("fire_rate", 1.0) * AugmentManager.player_stats["attack_speed"])
+		
+		# MANA FLOW ENTEGRASYONU (Wait Time Calculation)
+		var base_fire_rate = lv_data.get("fire_rate", 1.0)
+		var attack_speed_mult = AugmentManager.player_stats["attack_speed"]
+		var cdr = AugmentManager.player_stats.get("cooldown_reduction", 0.0)
+		
+		# Formül: Baz Süre / (Saldırı Hızı) * (1 - Bekleme Süresi Azaltma)
+		var base_wait = 1.0 / (base_fire_rate * attack_speed_mult)
+		attack_timer.wait_time = max(0.1, base_wait * (1.0 - cdr))
+		
+		# Değişkenleri aktar (Artık hata vermez çünkü comp scriptini düzelttik)
 		comp.current_damage = float(lv_data.get("damage", 10.0))
 		comp.current_count = int(lv_data.get("count", 1))
 		comp.current_pierce = int(lv_data.get("pierce", 1))

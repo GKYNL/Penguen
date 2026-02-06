@@ -11,8 +11,11 @@ var target_node: Node3D = null
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 
 func _ready():
+	# OPTİMİZASYON: Başlangıçta fizik işlemini kapatıyoruz.
+	# Böylece oyuncu yanına gelene kadar bu script işlemciyi HİÇ yormaz.
+	set_physics_process(false)
+
 	# STAT BAĞLANTISI: Pickup Range
-	# Stat 10 ise radius 10 olur, Magnet alırsan 15 olur.
 	if collision_shape.shape is SphereShape3D:
 		var current_range = AugmentManager.player_stats.get("pickup_range", 10.0)
 		collision_shape.shape.radius = current_range
@@ -30,20 +33,24 @@ func _setup_glow():
 		mesh_instance_3d.material_override = new_mat
 
 func _physics_process(delta):
-	if target_node:
-		# Oyuncunun merkezine doğru akış
-		var target_center = target_node.global_position + Vector3(0, 1.0, 0)
-		var direction = (target_center - global_position).normalized()
-		
-		follow_speed += acceleration
-		global_position += direction * follow_speed * delta
-		
-		if global_position.distance_to(target_center) < min_distance:
-			collect()
+	# Buraya sadece oyuncu menzile girince geliyoruz, o yüzden target_node kesin var.
+	if not target_node: return
+
+	# Oyuncunun merkezine doğru akış
+	var target_center = target_node.global_position + Vector3(0, 1.0, 0)
+	var direction = (target_center - global_position).normalized()
+	
+	follow_speed += acceleration
+	global_position += direction * follow_speed * delta
+	
+	if global_position.distance_to(target_center) < min_distance:
+		collect()
 
 func _on_body_entered(body):
 	if body.is_in_group("player"):
 		target_node = body
+		# OPTİMİZASYON: Oyuncu menzile girdi, küreyi uyandır!
+		set_physics_process(true)
 
 func collect():
 	AugmentManager.add_xp(xp_value)
