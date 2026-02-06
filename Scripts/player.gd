@@ -66,16 +66,11 @@ func _handle_look_at(delta: float) -> void:
 	
 	if target_dir.length() > 0.1:
 		target_dir.y = 0
-		
 		var target_pos = global_position + target_dir
 		if global_position.distance_to(target_pos) > 0.01:
 			var look_transform = body_mesh.global_transform.looking_at(target_pos, Vector3.UP)
-			
-			# DÜZELTME: Karakterin modelini 180 derece (PI radyan) döndürerek önünü hedefe bakacak hale getiriyoruz
 			look_transform.basis = look_transform.basis.rotated(Vector3.UP, PI)
-			
 			body_mesh.global_transform = body_mesh.global_transform.interpolate_with(look_transform, delta * 30.0)
-			
 			body_mesh.rotation.x = 0
 			body_mesh.rotation.z = 0
 
@@ -146,36 +141,39 @@ func _process_active_auras():
 	var space_state = get_world_3d().direct_space_state
 	var query = PhysicsShapeQueryParameters3D.new()
 	var shape = SphereShape3D.new()
-	shape.radius = 6.0
 	query.shape = shape
 	query.transform = global_transform
-	query.collision_mask = 2
 	
-	if AugmentManager.mechanic_levels.has("gold_7"):
-		var results = space_state.intersect_shape(query, 16)
-		var damage_tick = 5.0
-		var heal_tick = 0
-		var lvl = AugmentManager.mechanic_levels["gold_7"]
-		var lifesteal_pct = [0.02, 0.05, 0.08, 0.12][lvl-1]
-		for res in results:
-			if res.collider.has_method("take_damage"):
-				res.collider.take_damage(damage_tick)
-				heal_tick += damage_tick * lifesteal_pct
-		if heal_tick > 0: heal(heal_tick)
+	# KRİTİK DÜZELTME: collision_mask kısıtlamasını kaldırıyoruz
+	# Artık sadece temas edilen objelerin grubuna bakacağız.
+	var results = space_state.intersect_shape(query, 32)
 	
-	if AugmentManager.mechanic_levels.has("gold_9"):
-		var results = space_state.intersect_shape(query, 12)
-		var stun_chance = 0.2 + (AugmentManager.mechanic_levels["gold_9"] * 0.1)
-		for res in results:
-			if res.collider.has_method("apply_status"):
-				if randf() < stun_chance: res.collider.apply_status("stun", 0.5)
-				else: res.collider.apply_status("shock", 1.0)
-	
-	if AugmentManager.mechanic_levels.has("gold_2"):
-		var results = space_state.intersect_shape(query, 12)
-		var slow_amount = [0.2, 0.4, 0.5, 0.7][AugmentManager.mechanic_levels["gold_2"]-1]
-		for res in results:
-			if res.collider.has_method("apply_slow"): res.collider.apply_slow(slow_amount, 0.6)
+	for res in results:
+		var target = res.collider
+		if not is_instance_valid(target) or not target.is_in_group("Enemies"):
+			continue
+			
+		# 1. Gold 7: Lifesteal Aura
+		if AugmentManager.mechanic_levels.has("gold_7"):
+			var damage_tick = 5.0
+			var lvl = AugmentManager.mechanic_levels["gold_7"]
+			var lifesteal_pct = [0.02, 0.05, 0.08, 0.12][lvl-1]
+			if target.has_method("take_damage"):
+				target.take_damage(damage_tick)
+				heal(damage_tick * lifesteal_pct)
+		
+		# 2. Gold 9: Static Field
+		if AugmentManager.mechanic_levels.has("gold_9"):
+			var stun_chance = 0.2 + (AugmentManager.mechanic_levels["gold_9"] * 0.1)
+			if target.has_method("apply_status"):
+				if randf() < stun_chance: target.apply_status("stun", 0.5)
+				else: target.apply_status("shock", 1.0)
+		
+		# 3. Gold 2: Frost Armor (YAVAŞLATMA FIX)
+		if AugmentManager.mechanic_levels.has("gold_2"):
+			var slow_amount = [0.2, 0.4, 0.5, 0.7][AugmentManager.mechanic_levels["gold_2"]-1]
+			if target.has_method("apply_slow"):
+				target.apply_slow(slow_amount, 0.6)
 
 func _manage_aura_visibility() -> void:
 	if AugmentManager.mechanic_levels.has("gold_2") and frost_aura: if not frost_aura.visible: frost_aura.show(); _animate_vfx_entry(frost_aura)
@@ -196,10 +194,10 @@ func take_damage(amount: float) -> void:
 		shape.radius = 4.0
 		query.shape = shape
 		query.transform = global_transform
-		query.collision_mask = 2
 		var results = space_state.intersect_shape(query, 8)
 		for result in results:
-			if result.collider.has_method("take_damage"): result.collider.take_damage(thorns_dmg)
+			if result.collider.is_in_group("Enemies") and result.collider.has_method("take_damage"):
+				result.collider.take_damage(thorns_dmg)
 				
 	current_hp = clamp(current_hp - amount, 0, AugmentManager.player_stats["max_hp"])
 	health_changed.emit(current_hp, AugmentManager.player_stats["max_hp"])

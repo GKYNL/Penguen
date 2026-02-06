@@ -12,7 +12,11 @@ class_name hud
 @onready var info_label = $InfoPanel/InfoLabel
 @onready var xp_text = $XPBar/XPLabel
 
+# YENİ: Zamanlayıcı Label'ı (Senin eklediğin Label'ın adı buraya gelecek)
+@onready var time_label = $TimerLabel 
+
 var last_hp: float = 0.0
+var game_time: float = 0.0 # Oyun süresini tutacak değişken
 
 func _ready():
 	# XP Sinyallerini bağlarken doğru fonksiyona yönlendirdik
@@ -37,14 +41,27 @@ func _ready():
 		info_panel.modulate.a = 0
 		info_panel.visible = false
 
-# ASIL FIX BURASI: Yazıyı ve barı aynı anda güncelleyen ana fonksiyon
+# YENİ: Her karede (frame) çalışır ve süreyi günceller
+func _process(delta):
+	# Oyun duraklatıldığında (seçim ekranı vs.) süre de dursun istersen bu mantık zaten çalışır
+	# Çünkü get_tree().paused = true olduğunda process de durur (Node ayarına bağlı)
+	game_time += delta
+	_update_timer_display()
+
+# YENİ: Süreyi Dakika:Saniye formatına çevirip yazdırır
+func _update_timer_display():
+	if time_label:
+		var minutes = int(game_time / 60)
+		var seconds = int(game_time) % 60
+		# %02d demek: Sayı tek haneli olsa bile başına 0 koy (Örn: 05:09)
+		time_label.text = "%02d:%02d" % [minutes, seconds]
+
 func _update_xp_ui(current: float, total: float):
 	if xp_bar:
 		xp_bar.max_value = total
 		xp_bar.value = current
 	
 	if xp_text:
-		# "125 / 450" formatında yazdırır
 		xp_text.text = str(int(current)) + " / " + str(int(total))
 
 func _show_augment_popup(aug_name: String, aug_description: String):
@@ -65,7 +82,6 @@ func _on_skill_fired(skill_name: String, cooldown_time: float):
 	if icon_node:
 		animate_cooldown(icon_node, cooldown_time)
 
-# Sinyallerin kafası karışmasın diye bu iki fonksiyonu ana fonksiyona bağladım
 func _on_xp_changed(current, total):
 	_update_xp_ui(current, total)
 
@@ -75,7 +91,6 @@ func _update_xp_bar(current, max_val):
 func _update_level_info(new_level):
 	if level_label:
 		level_label.text = "LEVEL: " + str(new_level)
-	# Level atlayınca barı ve metni sıfırla (Yeni max_xp ile)
 	_update_xp_ui(0, AugmentManager.max_xp)
 
 func _on_player_health_changed(current_hp, max_hp):

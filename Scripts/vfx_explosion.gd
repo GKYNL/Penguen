@@ -3,7 +3,7 @@ extends MeshInstance3D
 func play_effect(base_damage: float):
 	# 1. Verileri Çek
 	var lv = AugmentManager.mechanic_levels.get("gold_4", 1)
-	var radius = [4.0, 5.0, 6.0, 8.0][lv-1]
+	var radius = [3.0, 4.0, 5.0, 6.0][lv-1]
 	var final_damage = base_damage * 2.0
 	
 	# 2. MESAFE BAZLI HASAR (Collision Yok!)

@@ -17,6 +17,10 @@ void fragment() {
     vec2 uv = UV - 0.5;
     float dist = length(uv);
     
+    // 0. ANA DAİRE MASKESİ (Karenin kenarlarını yok eden kısım)
+    // Merkeze 0.5 uzaklıktan sonrasını tamamen siler
+    float final_mask = smoothstep(0.5, 0.48, dist);
+    
     // 1. Temel Halka ve Kenar Yumuşatma
     float ring = smoothstep(0.48, 0.45, dist) * smoothstep(0.3, 0.48, dist);
     
@@ -30,7 +34,6 @@ void fragment() {
     waves *= (1.0 - dist * 2.0); // Merkeze yaklaştıkça sönümle
     
     // 4. Fresnel Etkisi (Kenar Parlaması)
-    // Not: Spatial shader'da NORMAL ve VIEW vektörlerini kullanarak daha 3D bir his verir
     float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
     
     // Renk Birleştirme
@@ -39,11 +42,14 @@ void fragment() {
     // Parıltı ekle (Zamanla değişen parlaklık)
     float pulse = 0.8 + 0.2 * sin(TIME * pulse_speed);
     
-    float alpha_mask = ring * 0.4; // Ana koruma katmanı
-    alpha_mask += cracks * 0.6;    // Buz çatlakları
-    alpha_mask += waves * 0.2;    // Enerji dalgaları
-    alpha_mask += fresnel * 0.5;  // Kenar ışıması
+    // Tüm katmanları birleştir
+    float alpha_content = ring * 0.4;     // Ana koruma katmanı
+    alpha_content += cracks * 0.6;        // Buz çatlakları
+    alpha_content += waves * 0.2;         // Enerji dalgaları
+    alpha_content += fresnel * 0.5;       // Kenar ışıması
     
     ALBEDO = final_color;
-    ALPHA = clamp(alpha_mask * ice_color.a * pulse, 0.0, 1.0);
+    
+    // KRİTİK NOKTA: İçeriği ana daire maskesiyle çarparak köşeleri kesiyoruz
+    ALPHA = clamp(alpha_content * ice_color.a * pulse * final_mask, 0.0, 1.0);
 }

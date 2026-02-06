@@ -105,7 +105,6 @@ func _on_logic_tick():
 		if global_position.distance_to(look_target) > 0.1:
 			look_at(look_target, Vector3.UP)
 
-# YENİ EKLENEN: Frost Armor buradan yavaşlatacak
 func apply_slow(amount: float, duration: float):
 	if is_elite: amount *= 0.5 
 	if amount > current_slow_factor:
@@ -156,10 +155,11 @@ func _execute_enemy():
 		var tw = create_tween()
 		tw.tween_property(execution_mark, "scale", Vector3.ONE * 2.0, 0.1)
 		tw.tween_property(execution_mark, "scale", Vector3.ONE, 0.2)
+	
 	_show_damage_numbers(666, Color.RED)
-	Engine.time_scale = 0.05
-	await get_tree().create_timer(0.01).timeout 
-	Engine.time_scale = 1.0
+	
+	# KRİTİK DEĞİŞİKLİK: await ve time_scale kaldırıldı.
+	# Böylece oyun akışı donmaz, sadece bu düşman ölür.
 	pre_die()
 
 func pre_die():
@@ -167,12 +167,12 @@ func pre_die():
 	collision_layer = 0
 	collision_mask = 0
 	logic_timer.stop()
+	
 	var tw = create_tween()
 	tw.tween_property(self, "scale", Vector3.ZERO, 0.3).set_ease(Tween.EASE_IN)
 	tw.finished.connect(die)
 
 func die():
-	# DÜZELTME: WeaponManager'ı bulup ona haber ver
 	var wm = get_tree().get_first_node_in_group("weapon_manager")
 	if wm and wm.has_method("on_enemy_killed"):
 		wm.on_enemy_killed(self)

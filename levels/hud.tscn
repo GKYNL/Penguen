@@ -41,6 +41,16 @@ bg_color = Color(3.4461616e-05, 0.9571319, 0.9571318, 1)
 [node name="HUD" type="CanvasLayer" unique_id=1393187076]
 script = ExtResource("1_37p78")
 
+[node name="TimerLabel" type="Label" parent="." unique_id=820089183]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -70.0
+offset_top = 19.0
+offset_right = -1.0
+offset_bottom = 42.0
+grow_horizontal = 0
+
 [node name="LevelLabel" type="Label" parent="." unique_id=1863404843]
 anchors_preset = -1
 anchor_left = 0.485
