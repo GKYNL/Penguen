@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://bdx25m06rorlp"]
+
+[ext_resource type="Shader" uid="uid://mf11qxkcq3ea" path="res://static_field.gdshader" id="1_gis2d"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5ds5q"]
+render_priority = 0
+shader = ExtResource("1_gis2d")
+
+[sub_resource type="TorusMesh" id="TorusMesh_15gqa"]
+material = SubResource("ShaderMaterial_5ds5q")
+outer_radius = 0.001
+
+[node name="Static Field" type="MeshInstance3D" unique_id=1597444851]
+transform = Transform3D(1, 0, 0, 0, 0.01, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("TorusMesh_15gqa")

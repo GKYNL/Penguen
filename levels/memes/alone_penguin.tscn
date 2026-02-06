@@ -1,0 +1,178 @@
+[gd_scene load_steps=0 format=3 uid="uid://clrpvpoxag4ir"]
+
+[ext_resource type="Texture2D" uid="uid://bchunh3hu4eq8" path="res://models/floor/icetest_Stylized_Ice_Cliff_basecolor.jpg" id="1_wh7vk"]
+[ext_resource type="PackedScene" uid="uid://dqsu4d5khjbas" path="res://prefabs/player.tscn" id="2_31rf7"]
+[ext_resource type="Texture2D" uid="uid://5864vtsrrspx" path="res://models/floor/icetest_Stylized_Ice_Cliff_roughness.png" id="2_cse4n"]
+[ext_resource type="PackedScene" uid="uid://dvn5atciytd5i" path="res://models/mountain/snow_mountain.glb" id="3_31rf7"]
+[ext_resource type="Texture2D" uid="uid://cufgk5a3qlwcw" path="res://models/floor/icetest_Stylized_Ice_Cliff_normal.jpg" id="3_m4c0d"]
+[ext_resource type="Script" uid="uid://tadp27stk56n" path="res://Scripts/ui_play.gd" id="6_cse4n"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tl1rf"]
+sky_top_color = Color(0.13120672, 0.6329743, 0.95348483, 1)
+sky_horizon_color = Color(0.5375247, 0.6355156, 0.7156432, 1)
+ground_bottom_color = Color(0.10980392, 0, 0, 1)
+ground_horizon_color = Color(0.5375247, 0.6355156, 0.7156432, 1)
+energy_multiplier = 0.15
+
+[sub_resource type="Sky" id="Sky_a0tk4"]
+sky_material = SubResource("ProceduralSkyMaterial_tl1rf")
+
+[sub_resource type="Environment" id="Environment_wh7vk"]
+background_mode = 2
+sky = SubResource("Sky_a0tk4")
+tonemap_mode = 3
+tonemap_exposure = 1.88
+ssr_enabled = true
+glow_enabled = true
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.36259368, 0.39105356, 0.44224682, 1)
+fog_light_energy = 1.67
+fog_density = 0.7997
+fog_sky_affect = 0.675
+fog_depth_curve = 0.37893027
+fog_depth_begin = 0.0
+fog_depth_end = 531.8
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.0535
+volumetric_fog_length = 22.54
+volumetric_fog_ambient_inject = 0.74
+adjustment_enabled = true
+adjustment_brightness = 1.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ef0a2"]
+resource_name = "Stylized Ice Cliff"
+render_priority = 1
+cull_mode = 2
+albedo_texture = ExtResource("1_wh7vk")
+metallic_texture = ExtResource("2_cse4n")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_cse4n")
+roughness_texture_channel = 1
+emission = Color(0.040417824, 0.15858126, 0.21852985, 1)
+normal_enabled = true
+normal_texture = ExtResource("3_m4c0d")
+backlight_enabled = true
+backlight = Color(0.8294355, 0.81258136, 0.80065566, 1)
+
+[sub_resource type="Animation" id="Animation_qdiyr"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(-3.2894375, 2.8195057, -7.640758)]
+}
+
+[sub_resource type="Animation" id="Animation_31rf7"]
+resource_name = "alone_penguin_camera"
+length = 15.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 3, 3.01, 15),
+"transitions": PackedFloat32Array(1.5691682, 0, 0.5, 1),
+"update": 0,
+"values": [Vector3(0, -0.6457718, 0), Vector3(0, 0.54454273, 0), Vector3(-0.8045968, 3.1415927, 0), Vector3(0.26703537, 3.1415927, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 3, 3.01, 15),
+"transitions": PackedFloat32Array(1.5691682, 0, 0.5, 1),
+"update": 0,
+"values": [Vector3(-3.2894375, 2.8195057, -7.640758), Vector3(1.691, 2.975, -3.776), Vector3(-1.469, 5.925, -13.661), Vector3(-1.354, 26.33, -135.461)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_tl1rf"]
+_data = {
+&"RESET": SubResource("Animation_qdiyr"),
+&"alone_penguin_camera": SubResource("Animation_31rf7")
+}
+
+[node name="AlonePenguin" type="Node3D" unique_id=682509583]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2001623165]
+environment = SubResource("Environment_wh7vk")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1490934790]
+transform = Transform3D(-0.8660254, -0.4881802, -0.10807504, 0, -0.21615003, 0.9763602, -0.5000001, 0.8455527, 0.18719141, -0.19264245, 6.523369, -12.556533)
+light_energy = 0.327
+shadow_enabled = true
+shadow_opacity = 0.24
+
+[node name="Floor" type="Node3D" parent="." unique_id=1999575330]
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="Floor" unique_id=1483036967]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 0)
+layers = 32
+use_collision = true
+size = Vector3(1000, 1, 1000)
+material = SubResource("StandardMaterial3D_ef0a2")
+
+[node name="Player" parent="." unique_id=1235475652 instance=ExtResource("2_31rf7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9314389, 0.5, -9.544849)
+engine_posessed = true
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=901209800]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2894375, 2.8195057, -7.640758)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=2078611464]
+root_node = NodePath("../Camera3D")
+libraries/ = SubResource("AnimationLibrary_tl1rf")
+autoplay = &"alone_penguin_camera"
+
+[node name="Sketchfab_Scene" parent="." unique_id=1917917673 instance=ExtResource("3_31rf7")]
+transform = Transform3D(8.86, 0, 0, 0, 8.86, 0, 0, 0, 8.86, -8.476, -34.68, 1000)
+
+[node name="Control" type="Control" parent="." unique_id=1623600327]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="Control" unique_id=908871264]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -278.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/PanelContainer" unique_id=263965649]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="Control/PanelContainer/VBoxContainer" unique_id=1833851263]
+layout_mode = 2
+text = "Play"
+script = ExtResource("6_cse4n")

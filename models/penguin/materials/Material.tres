@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cth76pmi4f5ph"]
+
+[ext_resource type="Texture2D" uid="uid://if62oysnbds" path="res://models/penguin/Penguin_v2_Main_Character_Low_DefaultMaterial_BaseColor.png" id="1_i7f3l"]
+[ext_resource type="Texture2D" uid="uid://dsfrhpmxmk27u" path="res://models/penguin/Penguin_v2_Main_Character_Low_DefaultMaterial_Roughness.png" id="2_frojy"]
+[ext_resource type="Texture2D" uid="uid://bo4nnvyr2yx5a" path="res://models/penguin/Penguin_v2_Main_Character_Low_DefaultMaterial_Normal.png" id="3_myuit"]
+
+[resource]
+resource_name = "Material"
+diffuse_mode = 2
+albedo_texture = ExtResource("1_i7f3l")
+metallic_texture = ExtResource("2_frojy")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_frojy")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_myuit")

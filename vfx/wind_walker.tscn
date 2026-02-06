@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://c12p0y1ppt5d6"]
+
+[ext_resource type="Shader" uid="uid://fpssxhy8ufnh" path="res://wind_walker.gdshader" id="1_ivfku"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cd6j6"]
+render_priority = 0
+shader = ExtResource("1_ivfku")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_5do5r"]
+material = SubResource("ShaderMaterial_cd6j6")
+cap_top = false
+cap_bottom = false
+
+[node name="Wind Walker" type="MeshInstance3D" unique_id=493971914]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_5do5r")

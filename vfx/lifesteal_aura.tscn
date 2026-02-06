@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://sjeqex5jx00n"]
+
+[ext_resource type="Shader" uid="uid://bxbur72fgyv1e" path="res://lifesteal_aura.gdshader" id="1_vp8eu"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_qj411"]
+render_priority = 0
+shader = ExtResource("1_vp8eu")
+shader_parameter/color = Color(0.8, 0, 0, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_7mqoe"]
+material = SubResource("ShaderMaterial_qj411")
+size = Vector2(1, 1)
+
+[node name="Lifesteal Aura" type="MeshInstance3D" unique_id=285969450]
+mesh = SubResource("PlaneMesh_7mqoe")

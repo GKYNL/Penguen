@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://g7v5aueny2ml"]
+
+[ext_resource type="Script" uid="uid://bijotltj2kfd1" path="res://Scripts/ice_shard.gd" id="1_64tra"]
+[ext_resource type="Material" uid="uid://dvy47dwuekn86" path="res://vfx/ice_shard_impact/ice_shard_vfx.tres" id="2_wc7rw"]
+[ext_resource type="BoxMesh" uid="uid://clleqn4q5xitd" path="res://vfx/ice_shard_impact/drawpass_ice_shard.tres" id="3_le4xo"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_q7lvk"]
+radius = 0.28759766
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_u8buf"]
+albedo_color = Color(0.27450982, 0.5411765, 1, 1)
+
+[node name="IceShard" type="Area3D" unique_id=300626182]
+transform = Transform3D(-0.999438, 0, -0.03352148, 0, 1, 0, 0.03352148, 0, -0.999438, 0, 0, 0)
+script = ExtResource("1_64tra")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1749456705]
+transform = Transform3D(2.0841578e-15, 4.371139e-08, -1, 1, -4.371139e-08, 1.7347235e-16, -4.371139e-08, -1, -4.371139e-08, -0.007460066, 0, 0.007446277)
+shape = SubResource("CylinderShape3D_q7lvk")
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="." unique_id=2011034186]
+transform = Transform3D(2.0841578e-15, 4.371139e-08, -1, 1, -4.371139e-08, 1.7347235e-16, -4.371139e-08, -1, -4.371139e-08, -0.007432514, -6.509753e-10, -0.007446277)
+radius = 0.302
+height = 1.9702148
+cone = true
+material = SubResource("StandardMaterial3D_u8buf")
+
+[node name="iceshard" type="GPUParticles3D" parent="." unique_id=765337520]
+transform = Transform3D(-1.0000005, 0, 8.568168e-08, 0, 1, 0, -8.568168e-08, 0, -1.0000005, -0.017267086, 0.38611805, 1.0856178)
+emitting = false
+one_shot = true
+explosiveness = 0.9
+process_material = ExtResource("2_wc7rw")
+draw_pass_1 = ExtResource("3_le4xo")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

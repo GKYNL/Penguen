@@ -1,0 +1,28 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bpiqxawfjk7rw"]
+
+[ext_resource type="Texture2D" uid="uid://bchunh3hu4eq8" path="res://models/floor/icetest_Stylized_Ice_Cliff_basecolor.jpg" id="1_r6p4i"]
+[ext_resource type="Texture2D" uid="uid://5864vtsrrspx" path="res://models/floor/icetest_Stylized_Ice_Cliff_roughness.png" id="2_vuq4f"]
+[ext_resource type="Texture2D" uid="uid://cufgk5a3qlwcw" path="res://models/floor/icetest_Stylized_Ice_Cliff_normal.jpg" id="3_x6at4"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r6p4i"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.18039216)
+
+[resource]
+resource_name = "Stylized Ice Cliff"
+render_priority = 1
+next_pass = SubResource("StandardMaterial3D_r6p4i")
+cull_mode = 2
+albedo_texture = ExtResource("1_r6p4i")
+metallic = 0.84
+metallic_texture = ExtResource("2_vuq4f")
+metallic_texture_channel = 2
+roughness = 0.0
+roughness_texture = ExtResource("2_vuq4f")
+roughness_texture_channel = 1
+emission_enabled = true
+emission = Color(0.040417824, 0.15858126, 0.21852985, 1)
+normal_enabled = true
+normal_texture = ExtResource("3_x6at4")
+backlight_enabled = true
+backlight = Color(0.8294355, 0.81258136, 0.80065566, 1)

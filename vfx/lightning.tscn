@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://0dypebitt7j"]
+
+[ext_resource type="Shader" uid="uid://bu167qphqaufe" path="res://shaders/vfx_lightning.gdshader" id="1_wa648"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_n3yy8"]
+render_priority = 0
+shader = ExtResource("1_wa648")
+shader_parameter/lightning_color = Color(0.2, 0.8, 1, 1)
+shader_parameter/speed = 16.92400080389
+shader_parameter/chaos = 0.6630000314925
+shader_parameter/thickness = 0.5
+
+[sub_resource type="QuadMesh" id="QuadMesh_n4shl"]
+lightmap_size_hint = Vector2i(9, 102)
+material = SubResource("ShaderMaterial_n3yy8")
+size = Vector2(1, 20)
+subdivide_width = 32
+subdivide_depth = 32
+center_offset = Vector3(0, 10, 0)
+
+[node name="lightning" type="MeshInstance3D" unique_id=2074603640]
+transform = Transform3D(-3.682705e-07, 0, 3.0000005, 0, 3, 0, -8.425047, 0, -1.3113417e-07, 0, 0, 0)
+mesh = SubResource("QuadMesh_n4shl")

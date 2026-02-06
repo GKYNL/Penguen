@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://bph58c1iovgje"]
+
+[ext_resource type="Shader" uid="uid://b0c33q1n7vwp5" path="res://VFX_ExecutionMark.gdshader" id="1_5aoa7"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4u03w"]
+render_priority = 0
+shader = ExtResource("1_5aoa7")
+shader_parameter/mark_color = Color(1, 0, 0, 1)
+shader_parameter/flash_speed = 10.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_5x1ht"]
+material = SubResource("ShaderMaterial_4u03w")
+
+[node name="VFX_ExecutionMark" type="MeshInstance3D" unique_id=1745830604]
+mesh = SubResource("QuadMesh_5x1ht")

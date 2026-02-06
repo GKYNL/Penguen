@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://bq2writufqw1f"]
+
+[ext_resource type="Script" uid="uid://ct4iwy188eqav" path="res://Scripts/xp.gd" id="1_kl4lw"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kl4lw"]
+transparency = 1
+shading_mode = 0
+diffuse_mode = 3
+specular_mode = 2
+albedo_color = Color(0, 1, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_u1phd"]
+material = SubResource("StandardMaterial3D_kl4lw")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_kl4lw"]
+radius = 9.988264
+
+[node name="Area3D" type="Area3D" unique_id=178581139]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)
+script = ExtResource("1_kl4lw")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=755110125]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)
+mesh = SubResource("SphereMesh_u1phd")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=704244098]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+shape = SubResource("SphereShape3D_kl4lw")

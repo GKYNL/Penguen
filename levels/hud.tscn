@@ -1,0 +1,180 @@
+[gd_scene format=3 uid="uid://bgj4r3cqgcvtf"]
+
+[ext_resource type="Script" uid="uid://c03m6v1wpesl8" path="res://Scripts/hud.gd" id="1_37p78"]
+[ext_resource type="Texture2D" uid="uid://mky140xtn6vk" path="res://icon.svg" id="2_64ctp"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ysc4d"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_64ctp"]
+bg_color = Color(1, 1, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8sq4i"]
+bg_color = Color(1, 1, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_640wx"]
+bg_color = Color(0.60784316, 0.18039216, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.60784316, 0.18039216, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a2258"]
+bg_color = Color(1, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1xsix"]
+bg_color = Color(0, 0.4862745, 0.4862745, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.4862745, 0.4862745, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rftc2"]
+bg_color = Color(3.4461616e-05, 0.9571319, 0.9571318, 1)
+
+[node name="HUD" type="CanvasLayer" unique_id=1393187076]
+script = ExtResource("1_37p78")
+
+[node name="LevelLabel" type="Label" parent="." unique_id=1863404843]
+anchors_preset = -1
+anchor_left = 0.485
+anchor_top = 0.025
+anchor_right = 0.513
+anchor_bottom = 0.060000002
+offset_left = 0.27996826
+offset_top = -0.20000076
+offset_right = 0.023986816
+offset_bottom = 0.11999893
+grow_horizontal = 2
+grow_vertical = 2
+text = "12"
+
+[node name="InfoPanel" type="Panel" parent="." unique_id=436934588]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -257.0
+offset_top = 46.0
+offset_right = 311.0
+offset_bottom = 86.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ysc4d")
+
+[node name="InfoLabel" type="Label" parent="InfoPanel" unique_id=2074202067]
+layout_mode = 0
+offset_left = -24.0
+offset_right = 539.0
+offset_bottom = 39.0
+text = "asssssssssssssssssssa"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="XPBar" type="ProgressBar" parent="." unique_id=516443521]
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.042000003
+offset_bottom = -0.21600151
+grow_horizontal = 2
+scale = Vector2(1, 0.52)
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.4935453, 0.49354547, 0.4935465, 1)
+theme_override_styles/background = SubResource("StyleBoxFlat_64ctp")
+theme_override_styles/fill = SubResource("StyleBoxFlat_8sq4i")
+value = 55.57
+show_percentage = false
+
+[node name="XPLabel" type="Label" parent="XPBar" unique_id=918455279]
+layout_mode = 0
+offset_right = 1145.0
+offset_bottom = 23.0
+theme_override_colors/font_color = Color(0.48570347, 0.48570353, 0.48570347, 1)
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=298753038]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -56.0
+offset_right = 193.0
+offset_bottom = -29.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_640wx")
+theme_override_styles/fill = SubResource("StyleBoxFlat_a2258")
+value = 79.02
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="HealthBar" unique_id=1150035039]
+layout_mode = 0
+offset_right = 193.0
+offset_bottom = 25.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ManaBar" type="ProgressBar" parent="." unique_id=363997102]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -29.0
+offset_right = 193.0
+offset_bottom = -2.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_1xsix")
+theme_override_styles/fill = SubResource("StyleBoxFlat_rftc2")
+value = 37.02
+show_percentage = false
+
+[node name="ManaLabel" type="Label" parent="ManaBar" unique_id=543306145]
+layout_mode = 0
+offset_right = 193.0
+offset_bottom = 27.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Abilities" type="HBoxContainer" parent="." unique_id=410879161]
+anchors_preset = -1
+anchor_left = 0.37100002
+anchor_top = 0.91
+anchor_right = 0.64400005
+anchor_bottom = 0.99700004
+offset_left = -0.3919983
+offset_top = 0.32000732
+offset_right = 341.11194
+offset_bottom = 71.94397
+grow_horizontal = 2
+grow_vertical = 0
+scale = Vector2(0.48000002, 0.44)
+
+[node name="Q_Icon" type="TextureRect" parent="Abilities" unique_id=1786852734]
+layout_mode = 2
+texture = ExtResource("2_64ctp")
+expand_mode = 3
+
+[node name="W_Icon" type="TextureRect" parent="Abilities" unique_id=56575620]
+layout_mode = 2
+texture = ExtResource("2_64ctp")
+expand_mode = 3
+
+[node name="E_Icon" type="TextureRect" parent="Abilities" unique_id=901887497]
+layout_mode = 2
+texture = ExtResource("2_64ctp")
+expand_mode = 3
+
+[node name="R_Icon" type="TextureRect" parent="Abilities" unique_id=1507280954]
+layout_mode = 2
+texture = ExtResource("2_64ctp")
+expand_mode = 3
+
+[node name="Space_Icon" type="TextureRect" parent="Abilities" unique_id=412783367]
+layout_mode = 2
+texture = ExtResource("2_64ctp")
+expand_mode = 3

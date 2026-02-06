@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://d4e3swmvpncs"]
+
+[ext_resource type="Shader" uid="uid://bsli4kj0iqtvb" path="res://VFX_frost_armor.gdshader" id="1_12r56"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_yx7db"]
+render_priority = 0
+shader = ExtResource("1_12r56")
+shader_parameter/color = Color(0, 0.6, 1, 1)
+
+[sub_resource type="TorusMesh" id="TorusMesh_oxnad"]
+material = SubResource("ShaderMaterial_yx7db")
+
+[node name="VFX_Frost Armor" type="MeshInstance3D" unique_id=1755837220]
+mesh = SubResource("TorusMesh_oxnad")

@@ -1,0 +1,11 @@
+[gd_resource type="ParticleProcessMaterial" format=3 uid="uid://dvy47dwuekn86"]
+
+[resource]
+direction = Vector3(0, 0, -1)
+initial_velocity_min = 20.27
+initial_velocity_max = 20.27
+scale_min = 4.0
+scale_max = 4.0
+collision_mode = 1
+collision_friction = 0.0
+collision_bounce = 1.0

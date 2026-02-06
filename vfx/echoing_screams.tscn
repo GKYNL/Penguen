@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://dteap5vx2drnj"]
+
+[ext_resource type="Shader" uid="uid://dwujp3gcqiddl" path="res://echo_wave.gdshader" id="1_0umj4"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0umj4"]
+render_priority = 0
+shader = ExtResource("1_0umj4")
+shader_parameter/expansion = 0.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_c3s0h"]
+material = SubResource("ShaderMaterial_0umj4")
+
+[node name="Echoing Screams" type="MeshInstance3D" unique_id=387662667]
+mesh = SubResource("SphereMesh_c3s0h")

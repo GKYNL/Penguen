@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://blxeq67dlsjjr"]
+
+[ext_resource type="Script" uid="uid://b2uip5duodd0j" path="res://Scripts/snowball.gd" id="1_m5fss"]
+[ext_resource type="Material" uid="uid://bafvoh6d8g41d" path="res://vfx/snowball_impact/snowball_vfx.tres" id="2_kvbxm"]
+[ext_resource type="SphereMesh" uid="uid://nvrxpfwwnsxe" path="res://vfx/snowball_impact/drawpass_snowball_vfx.tres" id="3_ik3fh"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_lx7eh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m5fss"]
+
+[node name="Snowball" type="Area3D" unique_id=1463776986]
+disable_mode = 2
+script = ExtResource("1_m5fss")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=929183645]
+shape = SubResource("SphereShape3D_lx7eh")
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="." unique_id=766848990]
+material_override = SubResource("StandardMaterial3D_m5fss")
+cast_shadow = 0
+
+[node name="snowball" type="GPUParticles3D" parent="." unique_id=1218824404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.041564703, -0.011092663, -0.058463573)
+emitting = false
+amount = 15
+one_shot = true
+explosiveness = 1.0
+process_material = ExtResource("2_kvbxm")
+draw_pass_1 = ExtResource("3_ik3fh")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

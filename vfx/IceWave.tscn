@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://bmqkvlirn12nn"]
+
+[ext_resource type="Script" uid="uid://ckw5kdn4ry0o0" path="res://Scripts/ice_wave_vfx.gd" id="1_y77f1"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_xb2in"]
+height = 0.35839844
+radius = 1.0209961
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2hgc7"]
+transparency = 1
+albedo_color = Color(0, 0.65882355, 1, 1)
+emission_enabled = true
+emission = Color(0, 0.65882355, 1, 1)
+
+[sub_resource type="TorusMesh" id="TorusMesh_rbjx4"]
+material = SubResource("StandardMaterial3D_2hgc7")
+inner_radius = 0.8
+
+[node name="IceWaveVFX" type="Area3D" unique_id=365015928]
+script = ExtResource("1_y77f1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1633440217]
+shape = SubResource("CylinderShape3D_xb2in")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2086175625]
+mesh = SubResource("TorusMesh_rbjx4")

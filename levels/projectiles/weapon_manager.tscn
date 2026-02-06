@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://d32mgx1limuxn"]
+
+[ext_resource type="Script" uid="uid://q5bdyorebes1" path="res://Scripts/lightning.gd" id="1_hkrja"]
+[ext_resource type="Script" uid="uid://2spllao54fty" path="res://Scripts/weapon_manager.gd" id="1_rqliq"]
+[ext_resource type="PackedScene" uid="uid://0dypebitt7j" path="res://vfx/lightning.tscn" id="2_uaqt0"]
+[ext_resource type="PackedScene" uid="uid://dteap5vx2drnj" path="res://vfx/echoing_screams.tscn" id="3_c1ncr"]
+[ext_resource type="PackedScene" uid="uid://cwvp4jykve2cv" path="res://levels/projectiles/shooting_component.tscn" id="4_07dti"]
+[ext_resource type="PackedScene" uid="uid://blxeq67dlsjjr" path="res://levels/projectiles/snowball/snowball.tscn" id="5_xrdhb"]
+[ext_resource type="PackedScene" uid="uid://g7v5aueny2ml" path="res://levels/projectiles/ice_shard/ice_shard.tscn" id="6_c1ncr"]
+[ext_resource type="Script" uid="uid://0yygslx8ova3" path="res://Scripts/ice_wave.gd" id="7_xrdhb"]
+
+[node name="WeaponManager" type="Node3D" unique_id=1924801721]
+script = ExtResource("1_rqliq")
+thunder_vfx = ExtResource("2_uaqt0")
+echo_vfx = ExtResource("3_c1ncr")
+
+[node name="thunderstrike" type="Node3D" parent="." unique_id=361675588]
+script = ExtResource("1_hkrja")
+lightning_vfx_scene = ExtResource("2_uaqt0")
+
+[node name="snowball_shooting_component" parent="." unique_id=1937896000 instance=ExtResource("4_07dti")]
+projectile_scene = ExtResource("5_xrdhb")
+shoot_origin_path = NodePath("..")
+
+[node name="ice_shard_shooting_component" parent="." unique_id=1012874276 instance=ExtResource("4_07dti")]
+projectile_scene = ExtResource("6_c1ncr")
+shoot_origin_path = NodePath("..")
+
+[node name="IceWave" type="Node3D" parent="." unique_id=717047977]
+script = ExtResource("7_xrdhb")

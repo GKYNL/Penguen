@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://c66eve0871x3x"]
+
+[ext_resource type="Shader" uid="uid://sfqxcp0dmcnl" path="res://VFX_Explosion.gdshader" id="1_72qvr"]
+[ext_resource type="Script" uid="uid://bg7aicxou1tgk" path="res://Scripts/vfx_explosion.gd" id="2_alsal"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_alsal"]
+fractal_type = 2
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_72qvr"]
+noise = SubResource("FastNoiseLite_alsal")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_alsal"]
+render_priority = 0
+shader = ExtResource("1_72qvr")
+shader_parameter/albedo = Color(0.42665297, 0.18137306, 0, 1)
+shader_parameter/progress = 0.1530000072675
+shader_parameter/noise_scale = 8.73
+shader_parameter/noise_tex = SubResource("NoiseTexture2D_72qvr")
+
+[sub_resource type="SphereMesh" id="SphereMesh_706w3"]
+material = SubResource("ShaderMaterial_alsal")
+
+[node name="VFX_Explosion" type="MeshInstance3D" unique_id=757663257]
+mesh = SubResource("SphereMesh_706w3")
+script = ExtResource("2_alsal")

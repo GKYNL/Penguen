@@ -1,0 +1,136 @@
+[gd_scene format=3 uid="uid://6dxrfhqr2ock"]
+
+[ext_resource type="Script" uid="uid://cdi4c6f3p1g2q" path="res://Scripts/augment_ui.gd" id="1_aclg6"]
+[ext_resource type="Texture2D" uid="uid://mky140xtn6vk" path="res://icon.svg" id="2_dmlgq"]
+
+[node name="AugmentUI" type="CanvasLayer" unique_id=1656502800]
+process_mode = 3
+script = ExtResource("1_aclg6")
+
+[node name="Background" type="ColorRect" parent="." unique_id=784066305]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.26666668, 0.26666668, 0.26666668, 0.4862745)
+
+[node name="Control" type="PanelContainer" parent="." unique_id=1288551414]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Container" type="HBoxContainer" parent="Control" unique_id=644852530]
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Card1" type="Button" parent="Control/Container" unique_id=837273824]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/Container/Card1" unique_id=2120670902]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.5
+offset_top = 4.0
+offset_right = -4.5
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="Control/Container/Card1/VBoxContainer" unique_id=1804983520]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("2_dmlgq")
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Control/Container/Card1/VBoxContainer" unique_id=285053291]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Description" type="Label" parent="Control/Container/Card1/VBoxContainer" unique_id=283369143]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="Card2" type="Button" parent="Control/Container" unique_id=1194243661]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/Container/Card2" unique_id=1545935998]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.5
+offset_top = 4.0
+offset_right = -4.5
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="Control/Container/Card2/VBoxContainer" unique_id=1117033619]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("2_dmlgq")
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Control/Container/Card2/VBoxContainer" unique_id=1726685844]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Description" type="Label" parent="Control/Container/Card2/VBoxContainer" unique_id=197420237]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="Card3" type="Button" parent="Control/Container" unique_id=739154310]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/Container/Card3" unique_id=632600255]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.5
+offset_top = 4.0
+offset_right = -4.5
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="Control/Container/Card3/VBoxContainer" unique_id=1690988623]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("2_dmlgq")
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Control/Container/Card3/VBoxContainer" unique_id=1229257809]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Description" type="Label" parent="Control/Container/Card3/VBoxContainer" unique_id=1997433942]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
