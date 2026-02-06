@@ -16,7 +16,8 @@
 [ext_resource type="PackedScene" uid="uid://bdx25m06rorlp" path="res://vfx/static_field.tscn" id="13_lulei"]
 [ext_resource type="Script" uid="uid://5uys3eborep" path="res://Scripts/lifesteal_aura.gd" id="14_edtk3"]
 [ext_resource type="Script" uid="uid://ceisjanwxwmd6" path="res://Scripts/static_field.gd" id="16_lulei"]
-[ext_resource type="PackedScene" uid="uid://3a42grex4dp1" path="res://vfx/OrbitalLaser.tscn" id="17_edtk3"]
+[ext_resource type="Shader" uid="uid://dg21d1fy35y8i" path="res://shaders/vfx_laser.gdshader" id="17_q2wkl"]
+[ext_resource type="Script" uid="uid://c48ysjjlw2228" path="res://Scripts/orbital_laser.gd" id="18_f2e50"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_sd3sa"]
 radius = 0.98535156
@@ -370,6 +371,34 @@ states/VelocitySpace/position = Vector2(509.4, 108.2)
 transitions = ["Start", "VelocitySpace", SubResource("AnimationNodeStateMachineTransition_1txc5"), "VelocitySpace", "End", SubResource("AnimationNodeStateMachineTransition_ht1c8")]
 graph_offset = Vector2(-455, -75)
 
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_n4shl"]
+frequency = 0.05
+fractal_type = 2
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_k7tm4"]
+noise = SubResource("FastNoiseLite_n4shl")
+seamless = true
+seamless_blend_skirt = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_k7tm4"]
+render_priority = 0
+shader = ExtResource("17_q2wkl")
+shader_parameter/core_color = Color(1.92523e-07, 0.7365672, 0.77667767, 1)
+shader_parameter/glow_color = Color(0.5019608, 1, 1, 1)
+shader_parameter/thickness = 0.4
+shader_parameter/beam_speed = 8.0
+shader_parameter/flicker_speed = 20.0
+shader_parameter/noise_tex = SubResource("NoiseTexture2D_k7tm4")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ukons"]
+material = SubResource("ShaderMaterial_k7tm4")
+height = 40.127
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_auaqg"]
+size = Vector3(1.8642578, 38.49121, 2.133789)
+
 [node name="Player" type="CharacterBody3D" unique_id=1235475652 groups=["player"]]
 script = ExtResource("1_r66lb")
 wind_vfx_scene = ExtResource("2_m2qjg")
@@ -388,22 +417,22 @@ bones/0/name = "Bone"
 bones/0/parent = -1
 bones/0/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 bones/0/enabled = true
-bones/0/position = Vector3(0, -0.1565395, 0)
-bones/0/rotation = Quaternion(0, 0, -0.053536415, 0.9985659)
+bones/0/position = Vector3(0, -0.055653255, 0)
+bones/0/rotation = Quaternion(0, 0, -0.0485382, 0.9988214)
 bones/0/scale = Vector3(1, 1, 1)
 bones/1/name = "Bone.001"
 bones/1/parent = 0
 bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6226267, 0)
 bones/1/enabled = true
 bones/1/position = Vector3(0, 1.6226267, 0)
-bones/1/rotation = Quaternion(0.01163476, 0, 0, 0.9999323)
+bones/1/rotation = Quaternion(0.011634759, 0, 0, 0.9999323)
 bones/1/scale = Vector3(1, 1, 1)
 bones/2/name = "Bone.003"
 bones/2/parent = 0
 bones/2/rest = Transform3D(-0.4990008, 0.8666015, -7.1120255e-08, -0.86660165, -0.49900073, -7.309765e-07, -6.689545e-07, -3.0312492e-07, 1, 0.91101265, 1.5441128, -1.0549032e-08)
 bones/2/enabled = true
 bones/2/position = Vector3(0.8522967, 1.2870066, 0.011632107)
-bones/2/rotation = Quaternion(-0.042103484, -0.015880005, -0.90494895, 0.42313415)
+bones/2/rotation = Quaternion(-0.042379145, -0.014880606, -0.9153153, 0.4002256)
 bones/2/scale = Vector3(1.0000001, 0.99999994, 1)
 bones/3/name = "Bone.004"
 bones/3/parent = 2
@@ -417,7 +446,7 @@ bones/4/parent = 0
 bones/4/rest = Transform3D(-0.50639766, -0.86230016, -2.0394428e-07, 0.8623003, -0.5063976, 1.3043464e-06, -1.2280151e-06, 4.8465665e-07, 1, -0.8874879, 1.5485166, -3.8256613e-07)
 bones/4/enabled = true
 bones/4/position = Vector3(-0.88748795, 1.4744858, 0.0019225028)
-bones/4/rotation = Quaternion(0.038322173, -0.021898838, 0.91953117, 0.390531)
+bones/4/rotation = Quaternion(0.038741544, -0.020969877, 0.92907214, 0.36726594)
 bones/4/scale = Vector3(1.0000001, 1, 1)
 bones/5/name = "Bone.006"
 bones/5/parent = 4
@@ -430,29 +459,29 @@ bones/6/name = "Bone.002"
 bones/6/parent = 0
 bones/6/rest = Transform3D(1, -7.105428e-15, -2.3841856e-07, 1.9256758e-07, -0.5896115, 0.807687, -1.4057433e-07, -0.80768704, -0.5896114, 0, 0, 0)
 bones/6/enabled = true
-bones/6/position = Vector3(-0.005078704, -0.018580755, 1.3282818e-08)
-bones/6/rotation = Quaternion(0.8807803, 0.07044452, 0.1385299, -0.4472954)
+bones/6/position = Vector3(-0.004326618, -0.021072498, 2.0569638e-08)
+bones/6/rotation = Quaternion(0.88030994, 0.07202601, 0.14161661, -0.44700283)
 bones/6/scale = Vector3(1, 1, 0.99999994)
 bones/7/name = "Bone.007"
 bones/7/parent = 6
 bones/7/rest = Transform3D(1, 2.0811433e-07, -1.2209223e-07, -2.0811437e-07, 0.48790783, -0.872895, -1.2209225e-07, 0.872895, 0.48790783, 0, 0.60943836, 0)
 bones/7/enabled = true
 bones/7/position = Vector3(0, 0.60943836, 0)
-bones/7/rotation = Quaternion(0.505089, 0.006021941, -0.060003515, 0.8609579)
+bones/7/rotation = Quaternion(0.5055563, 0.004227448, -0.04212294, 0.8617544)
 bones/7/scale = Vector3(1, 0.9999998, 0.9999998)
 bones/8/name = "Bone.008"
 bones/8/parent = -1
 bones/8/rest = Transform3D(0.9231829, 0.3843551, -0.0017370266, 0.025435323, -0.065601334, -0.9975217, -0.38351622, 0.9208514, -0.070338294, 0.49333817, -1.2184206, -0.066943906)
 bones/8/enabled = true
-bones/8/position = Vector3(0.49333924, -1.073278, 0.4819615)
-bones/8/rotation = Quaternion(0.6714201, 0.13354033, -0.14344077, 0.7146935)
+bones/8/position = Vector3(0.49331078, -1.0184882, 0.35876888)
+bones/8/rotation = Quaternion(0.689625, 0.13719451, -0.13994977, 0.69714344)
 bones/8/scale = Vector3(0.99999917, 0.9999998, 1)
 bones/9/name = "Bone.009"
 bones/9/parent = -1
 bones/9/rest = Transform3D(0.92855984, -0.3711778, -0.0017274391, -0.027179945, -0.063352086, -0.997621, 0.37018523, 0.9263979, -0.06891483, -0.46782064, -1.2184206, -0.09246139)
 bones/9/enabled = true
-bones/9/position = Vector3(-0.46788406, -1.2572953, -1.0271572)
-bones/9/rotation = Quaternion(0.71444863, -0.13810885, 0.12901877, 0.67367893)
+bones/9/position = Vector3(-0.46789634, -1.2643634, -0.905211)
+bones/9/rotation = Quaternion(0.71444863, -0.13810885, 0.12901878, 0.67367893)
 bones/9/scale = Vector3(0.9999996, 0.99999976, 0.99999994)
 
 [node name="Penguin_body_low" type="MeshInstance3D" parent="Penguin_v2/Armature/Skeleton3D" unique_id=244602075]
@@ -495,6 +524,20 @@ script = ExtResource("14_edtk3")
 transform = Transform3D(1, 0, 0, 0, 0.01, 0, 0, 0, 1, 0, -4.173835, 0)
 script = ExtResource("16_lulei")
 
-[node name="laser" parent="." unique_id=374758078 instance=ExtResource("17_edtk3")]
+[node name="OrbitalLaser" type="Node3D" parent="." unique_id=751495183]
+script = ExtResource("18_f2e50")
+
+[node name="BeamPivot" type="Node3D" parent="OrbitalLaser" unique_id=840533831]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="OrbitalLaser/BeamPivot" unique_id=374758078]
+mesh = SubResource("CylinderMesh_ukons")
+skeleton = NodePath("../../..")
+
+[node name="Area3D" type="Area3D" parent="OrbitalLaser/BeamPivot" unique_id=1283206352]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="OrbitalLaser/BeamPivot/Area3D" unique_id=1308400035]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8808594, 0)
+shape = SubResource("BoxShape3D_auaqg")
+debug_color = Color(1, 0, 0.12156863, 1)
 
 [connection signal="health_changed" from="." to="HUD" method="_on_player_health_changed"]

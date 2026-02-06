@@ -42,9 +42,36 @@ var tier_3_pool = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	load_augment_data()
+	load_augment_data() # Kart verilerini önden yüklemesi zarar vermez
+	# _setup_initial_mechanics() buradaydı, sildik.
+
+func initialize_game_start():
+	print("🎮 AugmentManager: Oyun başlatılıyor, mekanikler kuruluyor...")
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
+
+func _setup_initial_mechanics():
+	# Başlangıç statlarını sıfırla (Eğer main menüden tekrar giriliyorsa önemli)
+	current_level = 1
+	current_xp = 0
+	active_gold_ids = []
+	active_prism_ids = []
+	mechanic_levels = {}
+	
+	# --- KONTROL PANELİN ---
+	_force_unlock_augment("prism_1", 1) # Orbital Laser
+	# -----------------------
+	
+	# Gold 3 (Executioner) özel kontrolü
+	var found = false
+	for card in tier_2_pool:
+		if card.id == "gold_3":
+			player_stats["execution_threshold"] = card["levels"][0].get("threshold", 0.1)
+			found = true
+			break
+	if not found:
+		player_stats["execution_threshold"] = 0.1
+	emit_signal("mechanic_unlocked", "gold_3")
 
 func load_augment_data():
 	var file_path = "res://data/augments.json"
@@ -56,21 +83,36 @@ func load_augment_data():
 			tier_2_pool = data.get("tier_2_pool", [])
 			tier_3_pool = data.get("tier_3_pool", [])
 
-func _setup_initial_mechanics():
-	mechanic_levels["prism_1"] = 4
-	if not "prism_1" in active_gold_ids:
-		active_gold_ids.append("prism_1")
-	
-	var found = false
-	for card in tier_2_pool:
-		if card.id == "gold_3":
-			player_stats["execution_threshold"] = card["levels"][0].get("threshold", 0.1)
-			found = true
-			break
-	if not found:
-		player_stats["execution_threshold"] = 0.1
-	emit_signal("mechanic_unlocked", "gold_3")
 
+func _force_unlock_augment(aug_id: String, level: int = 1):
+	mechanic_levels[aug_id] = level
+	
+	# 1. Rarity'sine göre doğru listeye kaydet
+	if aug_id.begins_with("gold"):
+		if not aug_id in active_gold_ids: active_gold_ids.append(aug_id)
+	elif aug_id.begins_with("prism"):
+		if not aug_id in active_prism_ids: active_prism_ids.append(aug_id)
+
+	# 2. JSON verisini bul ve özel ayarları (execution threshold vb.) otomatik çek
+	var found_card = null
+	for pool in [tier_1_pool, tier_2_pool, tier_3_pool]:
+		for card in pool:
+			if card.id == aug_id:
+				found_card = card
+				break
+		if found_card: break
+
+	# 3. Eğer kart bulunduysa özel statları veya sinyalleri işle
+	if found_card:
+		if aug_id == "gold_3": # İnfaz eşiği gibi özel durumlar
+			player_stats["execution_threshold"] = found_card["levels"][level-1].get("threshold", 0.1)
+		
+		# Sinyali "call_deferred" ile gönderiyoruz ki sahneler tamamen yüklenmiş olsun
+		emit_signal.call_deferred("mechanic_unlocked", aug_id)
+		print("🚀 Başlangıç Mekaniği Hazır: ", aug_id, " Lv.", level)
+	else:
+		# Eğer pool henüz dolmadıysa (load_augment_data bitmediyse) minik bir hata basarız
+		push_warning("Uyarı: " + aug_id + " verisi bulunamadı, pool yüklenmemiş olabilir.")
 func start_game_selection():
 	current_level = 1
 	current_xp = 0
@@ -88,11 +130,22 @@ func add_xp(amount):
 func level_up():
 	current_level += 1
 	current_xp -= max_xp
-	if current_level < 5:
-		max_xp = 80 + (current_level * 40) 
-	else:
-		max_xp = 250 + ((current_level - 5) * 80)
 	
+	# YENİ FORMÜL: Karesel Artış (Quadratic Scaling)
+	# Başlarda (Lv 1-5) oyunun akıcılığını bozmuyoruz.
+	# İleride (Lv 10+) makas açılıyor.
+	
+	if current_level < 5:
+		# Eskisi gibi yumuşak başlangıç (80, 120, 160...)
+		max_xp = 80 + (current_level * 40)
+	elif current_level < 20:
+		# Orta oyun: Biraz daha dikleşiyor
+		max_xp = 300 + ((current_level - 5) * 100)
+	else:
+		# Geç oyun: Artık her level çok değerli
+		# Formül: Sabit + (Level * Çarpan) + (Level^2 * Zorluk)
+		max_xp = 1800 + ((current_level - 20) * 250) + int(pow(current_level - 20, 1.5) * 10)
+
 	emit_signal("level_changed", current_level)
 	emit_signal("xp_changed", current_xp, max_xp)
 	var choices = generate_choices()
