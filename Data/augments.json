@@ -1,63 +1,39 @@
 {
   "tier_1_pool": [
-	{
-	  "id": "start_snowball",
-	  "name": "Snowball Launcher",
-	  "max_level": 4,
-	  "type": "weapon_unlock",
-	  "rarity": "silver",
-	  "levels": [
-		{ "desc": "Hızlı tekli atış.", "fire_rate": 0.8, "damage": 12 },
-		{ "desc": "Daha seri atış.", "fire_rate": 1.4, "damage": 14 },
-		{ "desc": "Ağır Top (x2 Hasar)", "fire_rate": 1.4, "damage": 28 },
-		{ "desc": "MAX: Kar Makinesi", "fire_rate": 2.5, "damage": 30 }
-	  ]
-	},
-	{
-	  "id": "start_iceshard",
-	  "name": "Ice Shard Volley",
-	  "max_level": 4,
-	  "type": "weapon_unlock",
-	  "rarity": "silver",
-	  "levels": [
-		{ "desc": "Buz fırlatır.", "count": 1, "damage": 7.0, "pierce": 1, "fire_rate": 1.2 },
-		{ "desc": "Çift atış.", "count": 2, "damage": 8.0, "pierce": 1, "fire_rate": 1.2 },
-		{ "desc": "Delici Buzlar.", "count": 3, "damage": 9.0, "pierce": 2, "fire_rate": 1.5 },
-		{ "desc": "MAX: Şarapnel Fırtınası", "count": 5, "damage": 12.0, "pierce": 3, "fire_rate": 1.8 }
-	  ]
-	},
-	{ "id": "silver_1", "type": "stat", "name": "Iron Break", "desc": "Hasar +10%.", "stat": "damage_mult", "val": 0.10, "rarity": "silver" },
-	{ "id": "silver_2", "type": "stat", "name": "Healthy Blubber", "desc": "Max HP +150.", "stat": "max_hp", "val": 150, "rarity": "silver" },
-	{ "id": "silver_3", "type": "stat", "name": "Hasty Flippers", "desc": "Hız +10%.", "stat": "speed", "val": 2, "rarity": "silver" },
-	{ "id": "silver_4", "type": "stat", "name": "Mana Flow", "desc": "Bekleme Süresi -15%.", "stat": "cooldown_reduction", "val": 0.15, "rarity": "silver" },
-	{ "id": "silver_5", "type": "stat", "name": "Vampirism", "desc": "Öldürme başına +2 Can.", "stat": "lifesteal_flat", "val": 2, "rarity": "silver" },
-	{ "id": "silver_8", "type": "stat", "name": "Magnet", "desc": "Toplama Menzili +50%.", "stat": "pickup_range", "val": 10, "rarity": "silver" },
-	{ "id": "silver_9", "type": "stat", "name": "Ice Spikes", "desc": "Sana çarpan düşmanlara 25 hasar ver.", "stat": "thorns", "val": 25.0, "rarity": "silver" },
-	{ "id": "silver_10", "type": "stat", "name": "Wind Rush", "desc": "Dash bekleme süresi -1sn.", "stat": "dash_cooldown", "val": -1.0, "rarity": "silver" },
-	{ "id": "silver_11", "type": "stat", "name": "Triple Shot", "desc": "Mermiler %10 şansla 3 adet fırlatılır.", "stat": "multishot_chance", "val": 0.1, "rarity": "silver" }
+	{ "id": "start_snowball", "rarity": "silver", "weight": 1.0, "name": "Snowball Launcher", "max_level": 4, "type": "weapon_unlock", "levels": [ { "desc": "Hızlı tekli atış.", "fire_rate": 1.0, "damage": 12 }, { "desc": "Daha seri atış.", "fire_rate": 1.5, "damage": 14 }, { "desc": "Ağır Top (x2 Hasar)", "fire_rate": 1.5, "damage": 28 }, { "desc": "MAX: Kar Makinesi", "fire_rate": 2.2, "damage": 30 } ] },
+	{ "id": "start_iceshard", "rarity": "silver", "weight": 1.0, "name": "Ice Shard Volley", "max_level": 4, "type": "weapon_unlock", "levels": [ { "desc": "Buz fırlatır.", "count": 1, "damage": 7.0, "pierce": 1, "fire_rate": 1.2 }, { "desc": "Çift atış.", "count": 2, "damage": 8.0, "pierce": 1, "fire_rate": 1.2 }, { "desc": "Delici Buzlar.", "count": 3, "damage": 9.0, "pierce": 2, "fire_rate": 1.5 }, { "desc": "MAX: Şarapnel Fırtınası", "count": 4, "damage": 12.0, "pierce": 3, "fire_rate": 1.8 } ] },
+	{ "id": "silver_1", "rarity": "silver", "weight": 1.0, "name": "Iron Break", "type": "stat", "desc": "Hasar +10%.", "stat": "damage_mult", "val": 0.10 },
+	{ "id": "silver_2", "rarity": "silver", "weight": 1.0, "name": "Healthy Blubber", "type": "stat", "desc": "Max HP +150.", "stat": "max_hp", "val": 150 },
+	{ "id": "silver_3", "rarity": "silver", "weight": 1.0, "name": "Hasty Flippers", "type": "stat", "desc": "Hız +10%.", "stat": "speed", "val": 1.5 },
+	{ "id": "silver_4", "rarity": "silver", "weight": 1.0, "name": "Mana Flow", "type": "stat", "desc": "Bekleme Süresi -10%.", "stat": "cooldown_reduction", "val": 0.10 },
+	{ "id": "silver_5", "rarity": "silver", "weight": 1.0, "name": "Vampirism", "type": "stat", "desc": "Öldürme başına +2 Can.", "stat": "lifesteal_flat", "val": 2 },
+	{ "id": "silver_8", "rarity": "silver", "weight": 1.0, "name": "Magnet", "type": "stat", "desc": "Toplama Menzili +5 birim.", "stat": "pickup_range", "val": 5 },
+	{ "id": "silver_9", "rarity": "silver", "weight": 1.0, "name": "Ice Spikes", "type": "stat", "desc": "Düşmanlara 25 diken hasarı.", "stat": "thorns", "val": 25.0 },
+	{ "id": "silver_10", "rarity": "silver", "weight": 1.0, "name": "Wind Rush", "type": "stat", "desc": "Dash bekleme -0.5sn.", "stat": "dash_cooldown", "val": -0.5 },
+	{ "id": "silver_11", "rarity": "silver", "weight": 1.0, "name": "Triple Shot", "type": "stat", "desc": "%10 şansla 3 adet mermi.", "stat": "multishot_chance", "val": 0.1 }
   ],
   "tier_2_pool": [
-	{ "id": "gold_1", "name": "Thunderlord", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "3 Hedef Yıldırım", "damage": 50, "radius": 4}, {"desc": "5 Hedef Yıldırım", "damage": 80, "radius": 5}, {"desc": "8 Hedef + Şok", "damage": 120, "radius": 6}, {"desc": "MAX: Zincirleme Kıyamet", "damage": 200, "radius": 8}] },
-	{ "id": "gold_2", "name": "Frost Armor", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "%20 Yavaşlatma", "slow": 0.2}, {"desc": "%40 Yavaşlatma", "slow": 0.4}, {"desc": "Diken Hasarı", "slow": 0.5, "thorns": 20}, {"desc": "MAX: Donmuş Kale", "slow": 0.7, "thorns": 50}] },
-	{ "id": "gold_3", "name": "Executioner", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "%10 İnfaz", "threshold": 0.1}, {"desc": "%15 İnfaz", "threshold": 0.15}, {"desc": "%20 İnfaz", "threshold": 0.2}, {"desc": "MAX: Azrail", "threshold": 0.3}] },
-	{ "id": "gold_4", "name": "Chain Reaction", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "%10 Patlama Şansı", "chance": 0.1}, {"desc": "%20 Patlama Şansı", "chance": 0.2}, {"desc": "Büyük Patlama", "chance": 0.3, "radius": 5}, {"desc": "MAX: Nükleer Ölüm", "chance": 0.5, "radius": 8}] },
-	{ "id": "gold_5", "name": "Giant Slayer", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "Tanklara %20 Hasar"}, {"desc": "%40 Hasar"}, {"desc": "%60 Hasar"}, {"desc": "MAX: Dev Katili"}] },
-	{ "id": "gold_6", "name": "Echoing Screams", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "Skill 2x Cast", "waves": 2}, {"desc": "Hızlı Cast", "waves": 2}, {"desc": "Skill 3x Cast", "waves": 3}, {"desc": "MAX: Sonsuz Yankı", "waves": 4}] },
-	{ "id": "gold_7", "name": "Lifesteal Aura", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "%2 Can Çalma"}, {"desc": "%5 Can Çalma"}, {"desc": "Geniş Aura"}, {"desc": "MAX: Kan Havuzu"}] },
-	{ "id": "gold_8", "name": "Wind Walker", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "Dash sonrası hız"}, {"desc": "Dash mermileri sildirir"}, {"desc": "2 Dash hakkı"}, {"desc": "MAX: Işınlanma"}] },
-	{ "id": "gold_9", "name": "Static Field", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "Yakındaki düşmana şok"}, {"desc": "Daha sık şok"}, {"desc": "Sersemletme"}, {"desc": "MAX: Tesla Bobini"}] },
-	{ "id": "gold_10", "name": "Alchemist", "max_level": 4, "type": "mechanic", "rarity": "gold", "levels": [{"desc": "+%10 Gold"}, {"desc": "Şans artışı"}, {"desc": "İksir düşürme"}, {"desc": "MAX: Midas Dokunuşu"}] }
+	{ "id": "gold_1", "rarity": "gold", "weight": 0.25, "name": "Thunderlord", "max_level": 4, "type": "mechanic", "levels": [{"damage": 40, "count": 3}, {"damage": 60, "count": 5}, {"damage": 100, "count": 8}, {"damage": 180, "count": 12}] },
+	{ "id": "gold_2", "rarity": "gold", "weight": 0.45, "name": "Frost Armor", "max_level": 4, "type": "mechanic", "levels": [{"slow": 0.2}, {"slow": 0.35}, {"slow": 0.45, "thorns": 20}, {"slow": 0.6, "thorns": 50}] },
+	{ "id": "gold_3", "rarity": "gold", "weight": 0.35, "name": "Executioner", "max_level": 4, "type": "mechanic", "levels": [{"threshold": 0.1}, {"threshold": 0.15}, {"threshold": 0.2}, {"threshold": 0.25}] },
+	{ "id": "gold_4", "rarity": "gold", "weight": 0.20, "name": "Chain Reaction", "max_level": 4, "type": "mechanic", "levels": [{"chance": 0.1, "radius": 4}, {"chance": 0.2, "radius": 5}, {"chance": 0.3, "radius": 6}, {"chance": 0.4, "radius": 8}] },
+	{ "id": "gold_5", "rarity": "gold", "weight": 0.40, "name": "Giant Slayer", "max_level": 4, "type": "mechanic", "levels": [{"tank_damage_mult": 0.2}, {"tank_damage_mult": 0.4}, {"tank_damage_mult": 0.7}, {"tank_damage_mult": 1.2}] },
+	{ "id": "gold_6", "rarity": "gold", "weight": 0.25, "name": "Echoing Screams", "max_level": 4, "type": "mechanic", "levels": [{"waves": 2}, {"waves": 2}, {"waves": 3}, {"waves": 3}] },
+	{ "id": "gold_7", "rarity": "gold", "weight": 0.30, "name": "Lifesteal Aura", "max_level": 4, "type": "mechanic", "levels": [{"damage": 10}, {"damage": 25}, {"damage": 50, "heal_mult": 0.1}, {"damage": 100, "heal_mult": 0.2}] },
+	{ "id": "gold_8", "rarity": "gold", "weight": 0.50, "name": "Wind Walker", "max_level": 4, "type": "mechanic", "levels": [{"desc": "Hız"}, {"desc": "Mermi Silme"}, {"desc": "2 Dash"}, {"desc": "Işınlanma"}] },
+	{ "id": "gold_9", "rarity": "gold", "weight": 0.35, "name": "Static Field", "max_level": 4, "type": "mechanic", "levels": [{"damage": 20}, {"damage": 35}, {"damage": 50, "stun": true}, {"damage": 90, "stun": true}] },
+	{ "id": "gold_10", "rarity": "gold", "weight": 0.50, "name": "Alchemist", "max_level": 4, "type": "mechanic", "levels": [{"gold_bonus": 0.15}, {"luck": 1.2}, {"potion": true}, {"midas": true}] }
   ],
   "tier_3_pool": [
-	{ "id": "prism_1", "name": "Orbital Laser", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "7sn Lazer", "cd": 7}, {"desc": "5sn Lazer", "cd": 5}, {"desc": "4sn Lazer", "cd": 4}, {"desc": "MAX: İyon Topu", "cd": 2}] },
-	{ "id": "prism_2", "name": "Spell Weaver", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "-20% CD"}, {"desc": "-40% CD"}, {"desc": "-60% CD"}, {"desc": "MAX: 0 Bekleme"}] },
-	{ "id": "prism_3", "name": "Titan Form", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "Büyüme +HP"}, {"desc": "Zırh +Hasar"}, {"desc": "Yürürken Ezme"}, {"desc": "MAX: Godzilla"}] },
-	{ "id": "prism_4", "name": "Black Hole", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "Düşmanları çeker", "radius": 10}, {"desc": "Daha uzun süre", "radius": 15}, {"desc": "İçinde hasar", "radius": 15}, {"desc": "MAX: Tekillik", "radius": 25}] },
-	{ "id": "prism_5", "name": "Eternal Winter", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "Sürekli Blizzard"}, {"desc": "Geniş fırtına"}, {"desc": "Donduran fırtına"}, {"desc": "MAX: Buz Devri"}] },
-	{ "id": "prism_6", "name": "Time Stop", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "2sn Durdurma"}, {"desc": "4sn Durdurma"}, {"desc": "Daha kısa CD"}, {"desc": "MAX: Dio's World"}] },
-	{ "id": "prism_7", "name": "Dragon Breath", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "Alev püskürtme"}, {"desc": "Mavi alev"}, {"desc": "Geniş koni"}, {"desc": "MAX: Cehennem"}] },
-	{ "id": "prism_8", "name": "Mirror Image", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "1 Kopya çıkar"}, {"desc": "2 Kopya çıkar"}, {"desc": "Kopyalar hasar verir"}, {"desc": "MAX: Ordu"}] },
-	{ "id": "prism_9", "name": "Godspeed", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "X2 Hareket hızı"}, {"desc": "İz bırakma"}, {"desc": "Hızdan hasar"}, {"desc": "MAX: Flash"}] },
-	{ "id": "prism_10", "name": "Reality Warp", "max_level": 4, "type": "mechanic", "rarity": "prismatic", "levels": [{"desc": "Mermileri çevir"}, {"desc": "Rastgele Buff"}, {"desc": "Ölümsüzlük anları"}, {"desc": "MAX: Tanrı Modu"}] }
+	{ "id": "prism_1", "rarity": "prismatic", "weight": 0.20, "name": "Orbital Laser", "max_level": 4, "type": "mechanic", "levels": [{"cd": 7}, {"cd": 5}, {"cd": 4}, {"cd": 2}] },
+	{ "id": "prism_2", "rarity": "prismatic", "weight": 0.10, "name": "Spell Weaver", "max_level": 4, "type": "mechanic", "levels": [{"val": 0.2}, {"val": 0.35}, {"val": 0.5}, {"val": 0.75}] },
+	{ "id": "prism_3", "rarity": "prismatic", "weight": 0.15, "name": "Titan Form", "max_level": 4, "type": "mechanic", "levels": [{"hp_bonus": 500, "scale": 1.5}, {"dmg_bonus": 0.5, "armor": 50}, {"stomp_dmg": 100}, {"dmg_bonus": 1.0, "stomp_dmg": 300}] },
+	{ "id": "prism_4", "rarity": "prismatic", "weight": 0.25, "name": "Black Hole", "max_level": 4, "type": "mechanic", "levels": [{"radius": 10}, {"radius": 15}, {"radius": 15, "damage": 40}, {"radius": 22, "damage": 100}] },
+	{ "id": "prism_5", "rarity": "prismatic", "weight": 0.30, "name": "Eternal Winter", "max_level": 4, "type": "mechanic", "levels": [{"damage": 20}, {"radius": 15}, {"freeze": 0.2}, {"freeze": 0.5}] },
+	{ "id": "prism_6", "rarity": "prismatic", "weight": 0.08, "name": "Time Stop", "max_level": 4, "type": "mechanic", "levels": [{"duration": 2}, {"duration": 3}, {"duration": 3, "cd": 0.8}, {"duration": 5, "cd": 0.5}] },
+	{ "id": "prism_7", "rarity": "prismatic", "weight": 0.20, "name": "Dragon Breath", "max_level": 4, "type": "mechanic", "levels": [{"damage": 60}, {"damage": 100}, {"angle": 60}, {"damage": 250}] },
+	{ "id": "prism_8", "rarity": "prismatic", "weight": 0.35, "name": "Mirror Image", "max_level": 4, "type": "mechanic", "levels": [{"count": 1}, {"count": 2}, {"dmg": 0.3}, {"count": 4, "dmg": 0.5}] },
+	{ "id": "prism_9", "rarity": "prismatic", "weight": 0.25, "name": "Godspeed", "max_level": 4, "type": "mechanic", "levels": [{"speed": 1.5}, {"trail": true}, {"dmg_speed": 0.1}, {"speed": 2.5}] },
+	{ "id": "prism_10", "rarity": "prismatic", "weight": 0.05, "name": "Reality Warp", "max_level": 4, "type": "mechanic", "levels": [{"deflect": true}, {"buff": true}, {"invul": 2}, {"invul": 4}] }
   ]
 }

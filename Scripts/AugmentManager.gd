@@ -10,6 +10,8 @@ var current_level = 1
 var current_xp = 0
 var max_xp = 100
 var active_weapon_id = ""
+var max_gold_slots: int = 5
+var max_prism_slots: int = 2
 
 # TÜM EKSİK STATLAR DAHİL EDİLMİŞ HALİ
 var player_stats = {
@@ -71,16 +73,16 @@ func load_augment_data():
 	var file_path = "res://Data/augments.json"
 	if FileAccess.file_exists(file_path):
 		var file = FileAccess.open(file_path, FileAccess.READ)
-		var text = file.get_as_text()
-		var data = JSON.parse_string(text)
+		var data = JSON.parse_string(file.get_as_text())
 		if data:
+			# Yeni JSON yapısına göre dizileri çekiyoruz
 			tier_1_pool = data.get("tier_1_pool", [])
 			tier_2_pool = data.get("tier_2_pool", [])
 			tier_3_pool = data.get("tier_3_pool", [])
 		else:
-			push_error("AugmentManager: JSON parse hatası!")
+			push_error("JSON Parse Hatası!")
 	else:
-		push_error("AugmentManager: augments.json bulunamadı!")
+		push_error("augments.json bulunamadı!")
 
 func _force_unlock_augment(aug_id: String, level: int = 1):
 	mechanic_levels[aug_id] = level
@@ -106,6 +108,37 @@ func _force_unlock_augment(aug_id: String, level: int = 1):
 func apply_augment_stats_only(card_data, level):
 	if card_data.get("id") == "gold_3":
 		player_stats["execution_threshold"] = card_data["levels"][level-1].get("threshold", 0.1)
+
+func can_unlock_mechanic(id: String) -> bool:
+	# Eğer zaten bu mekaniğe sahipsek (seviye yükseltme ise) her zaman true
+	if mechanic_levels.has(id): return true
+	
+	var rarity = _get_rarity_from_json(id)
+	
+	if rarity == "gold":
+		return _get_active_mechanic_count("gold") < max_gold_slots
+		
+	if rarity == "prismatic":
+		return _get_active_mechanic_count("prismatic") < max_prism_slots
+		
+	return true # Silver ve diğerleri için sınırsız
+
+
+
+func _get_rarity_from_json(target_id: String) -> String:
+	var pools = [tier_1_pool, tier_2_pool, tier_3_pool]
+	for pool in pools:
+		for item in pool:
+			if item.id == target_id:
+				return item.get("rarity", "silver") # Varsayılan silver
+	return "silver"
+
+func _get_active_mechanic_count(target_rarity: String) -> int:
+	var count = 0
+	for m_id in mechanic_levels.keys():
+		if _get_rarity_from_json(m_id) == target_rarity:
+			count += 1
+	return count
 
 func start_game_selection():
 	current_level = 1
@@ -175,59 +208,78 @@ func _pick_weighted_card():
 	var roll = randf()
 	var target_pool = []
 	
-	if current_level >= 10 and roll <= 0.10:
+	# Tier Kararı (Zorluk ve Roll bazlı)
+	if current_level >= 10 and roll <= 0.15: # Prismatic Şansı
 		target_pool = tier_3_pool.filter(func(c): 
-			return (mechanic_levels.has(c.id) and mechanic_levels[c.id] < 4) or (not mechanic_levels.has(c.id) and active_prism_ids.size() < 3)
+			return (mechanic_levels.has(c.id) and mechanic_levels[c.id] < 4) or (not mechanic_levels.has(c.id) and active_prism_ids.size() < max_prism_slots)
 		)
-	elif current_level >= 5 and roll <= 0.35:
+	elif current_level >= 5 and roll <= 0.40: # Gold Şansı
 		target_pool = tier_2_pool.filter(func(c):
-			return (mechanic_levels.has(c.id) and mechanic_levels[c.id] < 4) or (not mechanic_levels.has(c.id) and active_gold_ids.size() < 4)
+			return (mechanic_levels.has(c.id) and mechanic_levels[c.id] < 4) or (not mechanic_levels.has(c.id) and active_gold_ids.size() < max_gold_slots)
 		)
 	
+	# Eğer yukarıdakiler boşsa veya gelmediyse Silver Havuzu
 	if target_pool.is_empty():
 		target_pool = tier_1_pool.filter(func(c):
 			if c.type == "stat": return true
-			if c.id == active_weapon_id or c.id == "start_snowball" or c.id == "start_iceshard": 
-				return mechanic_levels.get(c.id, 0) < 4 and mechanic_levels.get(c.id, 0) > 0
+			if c.id == active_weapon_id: return mechanic_levels.get(c.id, 0) < 4
 			return false
 		)
-		if target_pool.is_empty():
-			target_pool = tier_1_pool.filter(func(c): return c.type == "stat")
 
-	var total_weight = 0
-	var pool_with_weights = []
+	# JSON'daki 'weight' değerlerini kullanarak çekim yap
+	var total_w = 0.0
+	for c in target_pool: total_w += float(c.get("weight", 1.0))
+	
+	var r_weight = randf() * total_w
+	var current_w = 0.0
 	for card in target_pool:
-		var weight = 10 
-		var cur_lvl = mechanic_levels.get(card.id, 0)
-		if cur_lvl > 0:
-			match cur_lvl:
-				1: weight = 6 
-				2: weight = 2 
-				3: weight = 1 
-		total_weight += weight
-		pool_with_weights.append({"card": card, "cumulative_weight": total_weight})
-
-	var random_weight = randi() % total_weight if total_weight > 0 else 0
-	for item in pool_with_weights:
-		if random_weight < item.cumulative_weight:
-			return item.card
+		current_w += float(card.get("weight", 1.0))
+		if r_weight <= current_w:
+			return card
+			
 	return target_pool.pick_random() if not target_pool.is_empty() else null
-
+func _update_special_mechanic_stats(card_data, level):
+	var a_id = card_data.get("id", "")
+	if not card_data.has("levels"): return
+	
+	var lv_data = card_data["levels"][level-1]
+	
+	if a_id == "gold_3": # Executioner
+		player_stats["execution_threshold"] = lv_data.get("threshold", 0.1)
+	elif a_id == "prism_3": # Titan Form (İleride burayı dolduracağız)
+		player_stats["max_hp"] += lv_data.get("hp_bonus", 0)
+		player_stats["armor"] += lv_data.get("armor", 0)
 func _prepare_card(card):
 	var prepared = card.duplicate(true)
-	if prepared.has("levels"):
-		var cur_lvl = mechanic_levels.get(prepared.id, 0)
-		if cur_lvl < prepared["levels"].size():
-			prepared["desc"] = prepared["levels"][cur_lvl]["desc"]
+	var cur_lvl = mechanic_levels.get(prepared.id, 0)
+	
+	# DURUM A: Eğer kartın seviye sistemi (levels) varsa (Mekanikler ve Silahlar)
+	if prepared.has("levels") and prepared["levels"] is Array:
+		var levels_array = prepared["levels"]
+		if cur_lvl < levels_array.size():
+			var next_level_data = levels_array[cur_lvl]
+			# Eğer seviye verisinin içinde özel bir açıklama (desc) varsa onu kullan
+			if next_level_data.has("desc"):
+				prepared["desc"] = next_level_data["desc"]
+			# Yoksa ana kartın açıklamasını koru (Fallback)
+			
 			prepared["name"] = prepared["name"] + " Lv." + str(cur_lvl + 1)
 		else:
-			prepared["desc"] = "MAX LEVEL"
+			prepared["desc"] = "MAX LEVEL - Maksimum güce ulaşıldı."
 			prepared["name"] = prepared["name"] + " (MAX)"
+	
+	# DURUM B: Eğer kart tek seferlik bir stat kartıysa
+	else:
+		# Stat kartlarında zaten ana objede 'desc' vardır, dokunma.
+		# Sadece istersen ismine ufak bir ekleme yapabilirsin.
+		pass
+		
 	return prepared
 
 func apply_augment(card_data):
 	var a_id = card_data.get("id", "")
 	var a_name = card_data.get("name", "Geliştirme")
+	# Prepared card'dan gelen açıklamayı kullan
 	var a_desc = card_data.get("desc", "")
 	var type = card_data.get("type", "stat")
 	
@@ -245,21 +297,21 @@ func apply_augment(card_data):
 		var new_lvl = mechanic_levels.get(a_id, 0) + 1
 		mechanic_levels[a_id] = new_lvl
 		
-		if card_data.get("rarity") == "gold" and not a_id in active_gold_ids: 
+		var rarity = card_data.get("rarity", "")
+		if rarity == "gold" and not a_id in active_gold_ids: 
 			active_gold_ids.append(a_id)
-		elif card_data.get("rarity") == "prismatic" and not a_id in active_prism_ids: 
+		elif rarity == "prismatic" and not a_id in active_prism_ids: 
 			active_prism_ids.append(a_id)
 		
-		if a_id == "gold_3" and card_data.has("levels"):
-			player_stats["execution_threshold"] = card_data["levels"][new_lvl-1].get("threshold", 0.1)
+		# Stat bazlı özel tetikleyicileri (Executioner gibi) buradan güncellemeye devam et
+		_update_special_mechanic_stats(card_data, new_lvl)
 			
 		emit_signal("mechanic_unlocked", a_id)
 
 	elif type == "stat":
 		var s_name = card_data.get("stat", "")
 		if player_stats.has(s_name):
-			# Triple Shot Şans Fix (%10 -> 0.1)
-			var val = card_data["val"]
+			var val = card_data.get("val", 0.0)
 			if s_name == "multishot_chance" and val > 1.0: val = val / 100.0
 			
 			player_stats[s_name] += val
@@ -267,6 +319,6 @@ func apply_augment(card_data):
 			if s_name == "max_hp":
 				var player = get_tree().get_first_node_in_group("player")
 				if player and player.has_method("heal"):
-					player.heal(card_data["val"])
+					player.heal(val)
 			
 	get_tree().paused = false

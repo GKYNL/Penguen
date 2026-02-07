@@ -125,6 +125,7 @@ size = 55.0
 near = 1.0
 far = 100.0
 script = ExtResource("3_ssg30")
+target_node_path = NodePath("../Player")
 
 [node name="GPUParticles3D" type="GPUParticles3D" parent="Camera3D" unique_id=735634433]
 transform = Transform3D(1, 0, 0, 0, 0.061362088, -0.9981158, 0, 0.9981158, 0.061362088, 0.5519438, -14.697741, -4.1987686)
