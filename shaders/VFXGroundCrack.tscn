@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://bje3gl7anbwvq"]
+
+[ext_resource type="Shader" uid="uid://qlr8vjoxpu3c" path="res://shaders/ground_crack.gdshader" id="1_ja1l3"]
+[ext_resource type="Script" uid="uid://cpwhhf68r7lko" path="res://Scripts/vfx_ground_crack.gd" id="2_d6k0w"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4iakq"]
+size = Vector2(5, 5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ja1l3"]
+render_priority = 0
+shader = ExtResource("1_ja1l3")
+shader_parameter/crack_base_color = Color(5.0055983e-06, 0, 0.9314913, 1)
+shader_parameter/crack_glow_color = Color(0, 1, 1, 1)
+shader_parameter/scale = 13.08800057418
+shader_parameter/crack_width = 0.20000000298023
+shader_parameter/glow_width = 0.03200000152
+shader_parameter/expansion = 0.4230000200925
+shader_parameter/fade = 0.0
+
+[node name="MeshInstance3D" type="MeshInstance3D" unique_id=1926683697]
+mesh = SubResource("PlaneMesh_4iakq")
+surface_material_override/0 = SubResource("ShaderMaterial_ja1l3")
+script = ExtResource("2_d6k0w")
