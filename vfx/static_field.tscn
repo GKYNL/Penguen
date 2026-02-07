@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bdx25m06rorlp"]
 
-[ext_resource type="Shader" uid="uid://mf11qxkcq3ea" path="res://static_field.gdshader" id="1_gis2d"]
+[ext_resource type="Shader" uid="uid://mf11qxkcq3ea" path="res://shaders/static_field.gdshader" id="1_gis2d"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5ds5q"]
 render_priority = 0

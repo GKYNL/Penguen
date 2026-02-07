@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c66eve0871x3x"]
 
-[ext_resource type="Shader" uid="uid://sfqxcp0dmcnl" path="res://VFX_Explosion.gdshader" id="1_72qvr"]
+[ext_resource type="Shader" uid="uid://sfqxcp0dmcnl" path="res://shaders/VFX_Explosion.gdshader" id="1_72qvr"]
 [ext_resource type="Script" uid="uid://bg7aicxou1tgk" path="res://Scripts/vfx_explosion.gd" id="2_alsal"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_alsal"]

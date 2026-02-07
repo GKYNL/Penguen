@@ -49,7 +49,6 @@ func _start_horde(_id):
 	spawn_timer.start(base_spawn_interval)
 	brain_timer.start()
 	_spawn_formation("circle", 8) # Isınma turu
-	if OS.is_debug_build(): print("🔥 Horde Started! Director Active.")
 
 # --- YAPAY ZEKA YÖNETMENİ (AI DIRECTOR) ---
 func _ai_director_think():

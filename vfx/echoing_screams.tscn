@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dteap5vx2drnj"]
 
-[ext_resource type="Shader" uid="uid://dwujp3gcqiddl" path="res://echo_wave.gdshader" id="1_0umj4"]
+[ext_resource type="Shader" uid="uid://dwujp3gcqiddl" path="res://shaders/echo_wave.gdshader" id="1_0umj4"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0umj4"]
 render_priority = 0

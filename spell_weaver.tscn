@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://diwi4xqgx4qnp"]
+
+[ext_resource type="Shader" uid="uid://cssfg84w76af1" path="res://shaders/spell_weaver.gdshader" id="1_3u3f3"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4xwae"]
+render_priority = 0
+shader = ExtResource("1_3u3f3")
+shader_parameter/albedo = Color(0.6745098, 0, 1, 1)
+shader_parameter/speed = 3.70000017575
+shader_parameter/intensity = 2.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_a42br"]
+material = SubResource("ShaderMaterial_4xwae")
+
+[node name="MeshInstance3D" type="MeshInstance3D" unique_id=1561286171]
+mesh = SubResource("PlaneMesh_a42br")

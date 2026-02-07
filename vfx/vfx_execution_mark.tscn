@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bph58c1iovgje"]
 
-[ext_resource type="Shader" uid="uid://b0c33q1n7vwp5" path="res://VFX_ExecutionMark.gdshader" id="1_5aoa7"]
+[ext_resource type="Shader" uid="uid://b0c33q1n7vwp5" path="res://shaders/VFX_ExecutionMark.gdshader" id="1_5aoa7"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4u03w"]
 render_priority = 0

@@ -48,7 +48,6 @@ func _ready() -> void:
 	load_augment_data()
 
 func initialize_game_start():
-	print("🎮 AugmentManager: Oyun başlatılıyor, mekanikler kuruluyor...")
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
 
@@ -58,7 +57,7 @@ func _setup_initial_mechanics():
 	active_gold_ids = []
 	active_prism_ids = []
 	mechanic_levels = {}
-	#_force_unlock_augment("gold_4",1)
+	#_force_unlock_augment("prism_2",1)
 	player_stats = {
 		"max_hp": 100.0, "speed": 12.5, "damage_mult": 1.0, "attack_speed": 1.0,
 		"cooldown_reduction": 0.0, "pickup_range": 20.0, "freeze_duration": 4.0,
@@ -103,7 +102,7 @@ func _force_unlock_augment(aug_id: String, level: int = 1):
 	if found_card:
 		apply_augment_stats_only(found_card, level)
 		emit_signal.call_deferred("mechanic_unlocked", aug_id)
-		print("🚀 Force Unlock: ", aug_id, " Lv.", level)
+		print("Force Unlock: ", aug_id, " Lv.", level)
 
 func apply_augment_stats_only(card_data, level):
 	if card_data.get("id") == "gold_3":
@@ -240,15 +239,36 @@ func _pick_weighted_card():
 	return target_pool.pick_random() if not target_pool.is_empty() else null
 func _update_special_mechanic_stats(card_data, level):
 	var a_id = card_data.get("id", "")
+	# Stat kartı değilse ve levels dizisi varsa devam et
 	if not card_data.has("levels"): return
 	
 	var lv_data = card_data["levels"][level-1]
 	
-	if a_id == "gold_3": # Executioner
-		player_stats["execution_threshold"] = lv_data.get("threshold", 0.1)
-	elif a_id == "prism_3": # Titan Form (İleride burayı dolduracağız)
-		player_stats["max_hp"] += lv_data.get("hp_bonus", 0)
-		player_stats["armor"] += lv_data.get("armor", 0)
+	match a_id:
+		"gold_3": # Executioner
+			player_stats["execution_threshold"] = lv_data.get("threshold", 0.1)
+			
+		"prism_2": # Spell Weaver (YENİ EKLENDİ)
+			# JSON'daki "val" değerini (0.2, 0.35 vb.) doğrudan cooldown reduction'a ata
+			var cdr_val = lv_data.get("val", 0.0)
+			player_stats["cooldown_reduction"] = cdr_val
+			# Görsel güncelleme için Player'a sinyal gönderebiliriz veya Player process'te kontrol eder
+			var player = get_tree().get_first_node_in_group("player")
+			if player and player.has_method("update_prism_visuals"):
+				player.update_prism_visuals("prism_2", level)
+				
+		"prism_3": # Titan Form
+			# Can artışını statlara ekle
+			var hp_bonus = lv_data.get("hp_bonus", 0)
+			var armor_bonus = lv_data.get("armor", 0)
+			
+			# Eski bonusları çıkarmak zor olduğu için basitçe:
+			# Titan her seviye atladığında artan miktarı ekliyoruz (Birikimli değilse)
+			# Ancak senin JSON yapında 'hp_bonus' kümülatif değil, o seviyedeki toplam değer.
+			# Bu yüzden şöyle yapalım: Statları resetleyip baştan hesaplamak en temizidir ama
+			# şimdilik sadece değişimi ekleyelim:
+			if level == 1: player_stats["max_hp"] += 500
+			# (Titan mantığını player.gd içinde halletmiştik, burayı şimdilik pass geçebilirsin)
 func _prepare_card(card):
 	var prepared = card.duplicate(true)
 	var cur_lvl = mechanic_levels.get(prepared.id, 0)
@@ -297,13 +317,12 @@ func apply_augment(card_data):
 		var new_lvl = mechanic_levels.get(a_id, 0) + 1
 		mechanic_levels[a_id] = new_lvl
 		
-		var rarity = card_data.get("rarity", "")
-		if rarity == "gold" and not a_id in active_gold_ids: 
+		if card_data.get("rarity") == "gold" and not a_id in active_gold_ids: 
 			active_gold_ids.append(a_id)
-		elif rarity == "prismatic" and not a_id in active_prism_ids: 
+		elif card_data.get("rarity") == "prismatic" and not a_id in active_prism_ids: 
 			active_prism_ids.append(a_id)
 		
-		# Stat bazlı özel tetikleyicileri (Executioner gibi) buradan güncellemeye devam et
+		# Statları ve özel durumları güncelle
 		_update_special_mechanic_stats(card_data, new_lvl)
 			
 		emit_signal("mechanic_unlocked", a_id)

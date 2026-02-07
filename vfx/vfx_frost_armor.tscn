@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d4e3swmvpncs"]
 
-[ext_resource type="Shader" uid="uid://bsli4kj0iqtvb" path="res://VFX_frost_armor.gdshader" id="1_12r56"]
+[ext_resource type="Shader" uid="uid://bsli4kj0iqtvb" path="res://shaders/VFX_frost_armor.gdshader" id="1_12r56"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_yx7db"]
 render_priority = 0

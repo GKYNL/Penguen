@@ -14,9 +14,8 @@ signal health_changed(current_health, max_health)
 @onready var frost_aura = get_node_or_null("VFX_Frost")
 @onready var lifesteal_aura = get_node_or_null("VFX_Lifesteal")
 @onready var static_field_vfx = get_node_or_null("VFX_Static")
-
-# WeaponManager referansı
 @onready var weapon_manager = get_node_or_null("WeaponManager")
+@onready var spell_weaver_aura = get_node_or_null("VFX_SpellWeaver")
 
 var current_hp: float = 100.0
 var can_dash: bool = true
@@ -31,6 +30,7 @@ func _ready() -> void:
 	
 	current_dash_charges = AugmentManager.player_stats.get("dash_charges", 1)
 
+	# Sahnedeki auraları gizle
 	for vfx in [frost_aura, lifesteal_aura, static_field_vfx]:
 		if vfx: vfx.hide()
 	
@@ -39,40 +39,121 @@ func _ready() -> void:
 	aura_timer.autostart = true
 	aura_timer.timeout.connect(_process_active_auras)
 	add_child(aura_timer)
+	
+	# Oyun başlar başlamaz mekanikleri kontrol et
+	call_deferred("_manage_aura_visibility")
 
 func _physics_process(delta: float) -> void:
-	_handle_look_at(delta) 
+	_handle_look_at(delta)
 	_handle_movement_logic(delta)
+	# Aura yönetimi her kare çalışabilir veya timer'a bağlanabilir
+	# Görsel bir şey olduğu için process içinde kalması daha akıcı olur
 	_manage_aura_visibility() 
-	_handle_titan_form() 
+	_handle_titan_form()
 	move_and_slide()
 
+# --- AURA VE VFX YÖNETİMİ (HEPSİ BİR ARADA) ---
+func _manage_aura_visibility() -> void:
+	var levels = AugmentManager.mechanic_levels
+	
+	# 1. Frost Armor (Gold 2)
+	if levels.has("gold_2") and frost_aura: 
+		if not frost_aura.visible: 
+			frost_aura.show()
+			_animate_vfx_entry(frost_aura)
+
+	# 2. Lifesteal Aura (Gold 7)
+	if levels.has("gold_7") and lifesteal_aura: 
+		if not lifesteal_aura.visible: 
+			lifesteal_aura.show()
+			_animate_vfx_entry(lifesteal_aura)
+
+	# 3. Static Field (Gold 9)
+	if levels.has("gold_9") and static_field_vfx: 
+		if not static_field_vfx.visible: 
+			static_field_vfx.show()
+			_animate_vfx_entry(static_field_vfx)
+
+	# 4. Spell Weaver (Prism 2) - YENİ YERİ BURASI
+	if levels.has("prism_2"):
+		# Eğer aura henüz oluşturulmadıysa oluştur
+		if not is_instance_valid(spell_weaver_aura):
+			spell_weaver_aura = VFXSpellWeaver.new()
+			spell_weaver_aura.name = "VFX_SpellWeaver"
+			add_child(spell_weaver_aura)
+			spell_weaver_aura.visible = false # İlk başta gizli olsun ki animasyonla açılsın
+		
+		# Level bilgisini güncelle (Sürekli güncellemek sorun değil, script içinde kontrol edebilirsin)
+		spell_weaver_aura.set_level(levels["prism_2"])
+		
+		# Görünür değilse aç
+		if not spell_weaver_aura.visible:
+			spell_weaver_aura.show()
+			# Diğerleri gibi animasyonlu girsin
+			# Not: VFXSpellWeaver kendi içinde _animate_scale_up yapıyor ama garanti olsun
+			_animate_vfx_entry(spell_weaver_aura)
+
+
+# AugmentManager bu fonksiyonu çağırıyor diye silmedik, 
+# ama artık işi sadece aura yöneticisini tetiklemek.
+func update_prism_visuals(_prism_id: String, _level: int):
+	_manage_aura_visibility()
+
+# --- DİĞER FONKSİYONLAR ---
+func _process_active_auras():
+	var space_state = get_world_3d().direct_space_state
+	var query = PhysicsShapeQueryParameters3D.new()
+	var shape = SphereShape3D.new()
+	query.shape = shape
+	query.transform = global_transform
+	var results = space_state.intersect_shape(query, 32)
+	
+	for res in results:
+		var target = res.collider
+		if not is_instance_valid(target) or not target.is_in_group("Enemies"): continue
+		
+		# Statik hasar ve efektler buraya...
+		if AugmentManager.mechanic_levels.has("gold_7"):
+			var lvl = AugmentManager.mechanic_levels["gold_7"]
+			var lifesteal_pct = [0.02, 0.05, 0.08, 0.12][lvl-1]
+			if target.has_method("take_damage"):
+				target.take_damage(5.0)
+				heal(5.0 * lifesteal_pct)
+		
+		if AugmentManager.mechanic_levels.has("gold_9"):
+			var stun_chance = 0.2 + (AugmentManager.mechanic_levels["gold_9"] * 0.1)
+			if target.has_method("apply_status"):
+				if randf() < stun_chance: target.apply_status("stun", 0.5)
+				else: target.apply_status("shock", 1.0)
+		
+		if AugmentManager.mechanic_levels.has("gold_2"):
+			var slow_amount = [0.2, 0.4, 0.5, 0.7][AugmentManager.mechanic_levels["gold_2"]-1]
+			if target.has_method("apply_slow"): target.apply_slow(slow_amount, 0.6)
+
+func _animate_vfx_entry(node):
+	node.scale = Vector3.ZERO
+	var tw = create_tween()
+	tw.tween_property(node, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+
+# ... (Geri kalan handle_look_at, movement, damage kodları aynı) ...
 func _handle_look_at(delta: float) -> void:
 	var target_dir: Vector3 = Vector3.ZERO
 	var wm = weapon_manager
-	
-	if not is_instance_valid(wm):
-		wm = get_tree().get_first_node_in_group("weapon_manager")
-	
-	if is_instance_valid(wm):
-		if wm.has_method("_find_closest_enemy"):
-			var enemy = wm._find_closest_enemy()
-			if is_instance_valid(enemy) and enemy.current_hp > 0:
-				target_dir = (enemy.global_position - global_position).normalized()
+	if not is_instance_valid(wm): wm = get_tree().get_first_node_in_group("weapon_manager")
+	if is_instance_valid(wm) and wm.has_method("_find_closest_enemy"):
+		var enemy = wm._find_closest_enemy()
+		if is_instance_valid(enemy) and enemy.current_hp > 0:
+			target_dir = (enemy.global_position - global_position).normalized()
 
-	if target_dir.length() < 0.1:
-		if velocity.length() > 0.1:
-			target_dir = velocity.normalized()
+	if target_dir.length() < 0.1 and velocity.length() > 0.1:
+		target_dir = velocity.normalized()
 	
 	if target_dir.length() > 0.1:
 		target_dir.y = 0
-		var target_pos = global_position + target_dir
-		if global_position.distance_to(target_pos) > 0.01:
-			var look_transform = body_mesh.global_transform.looking_at(target_pos, Vector3.UP)
-			look_transform.basis = look_transform.basis.rotated(Vector3.UP, PI)
-			body_mesh.global_transform = body_mesh.global_transform.interpolate_with(look_transform, delta * 30.0)
-			body_mesh.rotation.x = 0
-			body_mesh.rotation.z = 0
+		var look_transform = body_mesh.global_transform.looking_at(global_position + target_dir, Vector3.UP)
+		look_transform.basis = look_transform.basis.rotated(Vector3.UP, PI)
+		body_mesh.global_transform = body_mesh.global_transform.interpolate_with(look_transform, delta * 30.0)
+		body_mesh.rotation.x = 0; body_mesh.rotation.z = 0
 
 func _handle_movement_logic(delta: float) -> void:
 	var base_speed = AugmentManager.player_stats["speed"]
@@ -102,104 +183,37 @@ func _handle_movement_logic(delta: float) -> void:
 func execute_dash() -> void:
 	var max_charges = AugmentManager.player_stats.get("dash_charges", 1)
 	if AugmentManager.mechanic_levels.get("gold_8", 0) >= 3: max_charges += 1
-	
 	if current_dash_charges <= 0: return 
 	current_dash_charges -= 1
 	
 	if wind_vfx_scene:
 		var wind = wind_vfx_scene.instantiate()
 		get_tree().root.add_child(wind)
-		
-		# Karakterin gövde hizasından başlasın
 		wind.global_position = global_position + Vector3(0, 1.2, 0)
-		
-		# YÖN HESABI
 		var move_dir = Vector3(velocity.x, 0, velocity.z).normalized()
-		if move_dir.length() < 0.1:
-			move_dir = -body_mesh.global_transform.basis.z.normalized() 
-		
-		# 1. ÖNCE HEDEFE BAKTIR (Z eksenini hizalar)
+		if move_dir.length() < 0.1: move_dir = -body_mesh.global_transform.basis.z.normalized() 
 		wind.look_at(wind.global_position + move_dir, Vector3.UP)
-		
-		# 2. EKSEN DÜZELTMESİ (Dikey/Yana yarık durması için)
-		# Plane Mesh yatay olduğu için onu X ekseninde 90 derece çevirip dikiyoruz.
-		# Eğer rüzgar hala ters bakıyorsa 90 yerine -90 ( -PI/2 ) dene.
 		wind.rotate_object_local(Vector3.RIGHT, PI/2.0) 
-
-		# Tween animasyonu
 		var tw = create_tween()
-		var target_pos = wind.global_position + move_dir * 8.0
-		tw.tween_property(wind, "global_position", target_pos, 0.4)
+		tw.tween_property(wind, "global_position", wind.global_position + move_dir * 8.0, 0.4)
 		tw.parallel().tween_property(wind, "scale", Vector3(0.2, 0.2, 2.5), 0.4).set_ease(Tween.EASE_IN)
 		tw.finished.connect(wind.queue_free)
 
-	# DASH HAREKETİ
-	# Hızı anlık fırlatıyoruz
 	var dash_force = 3.5
-	velocity.x *= dash_force
-	velocity.z *= dash_force
-	
+	velocity.x *= dash_force; velocity.z *= dash_force
 	dash_speed_bonus = 1.6
 	var tw_bonus = create_tween()
 	tw_bonus.tween_property(self, "dash_speed_bonus", 1.0, 0.8).set_ease(Tween.EASE_OUT)
 	
-	# COOLDOWN YÖNETİMİ
 	var final_cd = (3.0 + AugmentManager.player_stats.get("dash_cooldown", 0.0)) * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0))
 	await get_tree().create_timer(max(0.4, final_cd)).timeout
-	if current_dash_charges < max_charges:
-		current_dash_charges += 1
+	if current_dash_charges < max_charges: current_dash_charges += 1
+
 func _handle_titan_form() -> void:
 	if AugmentManager.mechanic_levels.has("prism_3"):
 		var scale_bonus = 1.0 + (AugmentManager.mechanic_levels["prism_3"] * 0.15)
 		scale = scale.lerp(Vector3.ONE * scale_bonus, 0.1)
 
-func _process_active_auras():
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsShapeQueryParameters3D.new()
-	var shape = SphereShape3D.new()
-	query.shape = shape
-	query.transform = global_transform
-	
-	# KRİTİK DÜZELTME: collision_mask kısıtlamasını kaldırıyoruz
-	# Artık sadece temas edilen objelerin grubuna bakacağız.
-	var results = space_state.intersect_shape(query, 32)
-	
-	for res in results:
-		var target = res.collider
-		if not is_instance_valid(target) or not target.is_in_group("Enemies"):
-			continue
-			
-		# 1. Gold 7: Lifesteal Aura
-		if AugmentManager.mechanic_levels.has("gold_7"):
-			var damage_tick = 5.0
-			var lvl = AugmentManager.mechanic_levels["gold_7"]
-			var lifesteal_pct = [0.02, 0.05, 0.08, 0.12][lvl-1]
-			if target.has_method("take_damage"):
-				target.take_damage(damage_tick)
-				heal(damage_tick * lifesteal_pct)
-		
-		# 2. Gold 9: Static Field
-		if AugmentManager.mechanic_levels.has("gold_9"):
-			var stun_chance = 0.2 + (AugmentManager.mechanic_levels["gold_9"] * 0.1)
-			if target.has_method("apply_status"):
-				if randf() < stun_chance: target.apply_status("stun", 0.5)
-				else: target.apply_status("shock", 1.0)
-		
-		# 3. Gold 2: Frost Armor (YAVAŞLATMA FIX)
-		if AugmentManager.mechanic_levels.has("gold_2"):
-			var slow_amount = [0.2, 0.4, 0.5, 0.7][AugmentManager.mechanic_levels["gold_2"]-1]
-			if target.has_method("apply_slow"):
-				target.apply_slow(slow_amount, 0.6)
-
-func _manage_aura_visibility() -> void:
-	if AugmentManager.mechanic_levels.has("gold_2") and frost_aura: if not frost_aura.visible: frost_aura.show(); _animate_vfx_entry(frost_aura)
-	if AugmentManager.mechanic_levels.has("gold_7") and lifesteal_aura: if not lifesteal_aura.visible: lifesteal_aura.show(); _animate_vfx_entry(lifesteal_aura)
-	if AugmentManager.mechanic_levels.has("gold_9") and static_field_vfx: if not static_field_vfx.visible: static_field_vfx.show(); _animate_vfx_entry(static_field_vfx)
-
-func _animate_vfx_entry(node):
-	node.scale = Vector3.ZERO
-	var tw = create_tween()
-	tw.tween_property(node, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 func take_damage(amount: float) -> void:
 	var thorns_dmg = AugmentManager.player_stats.get("thorns", 0.0)
@@ -207,9 +221,7 @@ func take_damage(amount: float) -> void:
 		var space_state = get_world_3d().direct_space_state
 		var query = PhysicsShapeQueryParameters3D.new()
 		var shape = SphereShape3D.new()
-		shape.radius = 4.0
-		query.shape = shape
-		query.transform = global_transform
+		shape.radius = 4.0; query.shape = shape; query.transform = global_transform
 		var results = space_state.intersect_shape(query, 8)
 		for result in results:
 			if result.collider.is_in_group("Enemies") and result.collider.has_method("take_damage"):

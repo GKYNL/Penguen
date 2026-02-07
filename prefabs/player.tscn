@@ -10,9 +10,11 @@
 [ext_resource type="PackedScene" uid="uid://b6u0gfxif1vse" path="res://levels/enemy_spawner.tscn" id="9_rgeog"]
 [ext_resource type="PackedScene" uid="uid://6dxrfhqr2ock" path="res://levels/augment_ui.tscn" id="10_8rb0w"]
 [ext_resource type="PackedScene" uid="uid://c8cedrp6g3fso" path="res://prefabs/enemy.tscn" id="10_opo22"]
+[ext_resource type="PackedScene" uid="uid://diwi4xqgx4qnp" path="res://spell_weaver.tscn" id="11_22xyk"]
 [ext_resource type="PackedScene" uid="uid://d4e3swmvpncs" path="res://vfx/vfx_frost_armor.tscn" id="11_llb5v"]
-[ext_resource type="Shader" uid="uid://bsli4kj0iqtvb" path="res://VFX_frost_armor.gdshader" id="12_f2e50"]
+[ext_resource type="Shader" uid="uid://bsli4kj0iqtvb" path="res://shaders/VFX_frost_armor.gdshader" id="12_f2e50"]
 [ext_resource type="Script" uid="uid://7l31ixbukw7u" path="res://Scripts/vfx_frost_armor.gd" id="12_lulei"]
+[ext_resource type="Script" uid="uid://cctyaoausl4rt" path="res://Scripts/vfx_spell_weaver.gd" id="12_r3tw4"]
 [ext_resource type="PackedScene" uid="uid://sjeqex5jx00n" path="res://vfx/lifesteal_aura.tscn" id="12_x0bak"]
 [ext_resource type="PackedScene" uid="uid://bdx25m06rorlp" path="res://vfx/static_field.tscn" id="13_lulei"]
 [ext_resource type="Script" uid="uid://5uys3eborep" path="res://Scripts/lifesteal_aura.gd" id="14_edtk3"]
@@ -372,6 +374,56 @@ states/VelocitySpace/position = Vector2(509.4, 108.2)
 transitions = ["Start", "VelocitySpace", SubResource("AnimationNodeStateMachineTransition_1txc5"), "VelocitySpace", "End", SubResource("AnimationNodeStateMachineTransition_ht1c8")]
 graph_offset = Vector2(-455, -75)
 
+[sub_resource type="Shader" id="Shader_r3tw4"]
+code = "shader_type spatial;
+render_mode blend_add, cull_disabled, unshaded, depth_draw_opaque;
+
+uniform vec4 albedo : source_color = vec4(0.5, 0.0, 1.0, 1.0); // Prismatic Moru
+uniform float speed : hint_range(0.0, 5.0) = 1.0;
+uniform float intensity : hint_range(0.0, 8.0) = 1.0;
+// uniform sampler2D rune_texture; // Kullanmıyorsan yorum satırına al veya sil
+
+void vertex() {
+	// Billboard efekti için (Yere yapışık kalmasını istiyorsan burayı boş bırak)
+	// MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+}
+
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 2.0;
+	float angle = atan(uv.y, uv.x);
+	
+	// Dönme Efekti
+	float rotation = TIME * speed;
+	
+	// DÜZELTME: (TIME * 2.0) yerine 'rotation' değişkenini koyduk.
+	// Artık 'speed' parametresini değiştirdiğinde dönüş hızı da değişecek.
+	float spiral = sin(dist * 10.0 - rotation + angle * 5.0);
+	
+	// Halka Şekli
+	float ring = 1.0 - smoothstep(0.4, 0.5, dist);
+	float inner_hole = smoothstep(0.2, 0.3, dist);
+	float shape = ring * inner_hole;
+	
+	// Enerji dalgalanması
+	float pulse = 0.5 + 0.5 * sin(TIME * 3.0);
+	
+	vec3 color = albedo.rgb * (1.0 + spiral * 0.5);
+	
+	ALBEDO = color * intensity;
+	ALPHA = shape * (0.6 + pulse * 0.4) * albedo.a;
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nmymu"]
+render_priority = 0
+shader = SubResource("Shader_r3tw4")
+shader_parameter/albedo = Color(0.6745098, 0, 1, 1)
+shader_parameter/speed = 3.70000017575
+shader_parameter/intensity = 5.9200002812
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_gf0v6"]
+material = SubResource("ShaderMaterial_nmymu")
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_22xyk"]
 render_priority = 0
 shader = ExtResource("12_f2e50")
@@ -429,22 +481,22 @@ bones/0/name = "Bone"
 bones/0/parent = -1
 bones/0/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 bones/0/enabled = true
-bones/0/position = Vector3(0, 0.23434305, 0)
-bones/0/rotation = Quaternion(0, 0, -0.027438391, 0.99962354)
+bones/0/position = Vector3(0, -0.15027817, 0)
+bones/0/rotation = Quaternion(0, 0, 0.060197074, 0.9981865)
 bones/0/scale = Vector3(1, 1, 1)
 bones/1/name = "Bone.001"
 bones/1/parent = 0
 bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6226267, 0)
 bones/1/enabled = true
 bones/1/position = Vector3(0, 1.6226267, 0)
-bones/1/rotation = Quaternion(0.01163476, 0, 0, 0.9999323)
+bones/1/rotation = Quaternion(0.010339506, -0.073394395, 0.0029167628, 0.9972452)
 bones/1/scale = Vector3(1, 1, 1)
 bones/2/name = "Bone.003"
 bones/2/parent = 0
 bones/2/rest = Transform3D(-0.4990008, 0.8666015, -7.1120255e-08, -0.86660165, -0.49900073, -7.309765e-07, -6.689545e-07, -3.0312492e-07, 1, 0.91101265, 1.5441128, -1.0549032e-08)
 bones/2/enabled = true
 bones/2/position = Vector3(0.8522967, 1.2870066, 0.011632107)
-bones/2/rotation = Quaternion(-0.041471567, -0.018202685, -0.85475063, 0.51705927)
+bones/2/rotation = Quaternion(-0.04289018, -0.014531162, -0.8851711, 0.46305656)
 bones/2/scale = Vector3(1.0000001, 0.99999994, 1)
 bones/3/name = "Bone.004"
 bones/3/parent = 2
@@ -458,7 +510,7 @@ bones/4/parent = 0
 bones/4/rest = Transform3D(-0.50639766, -0.86230016, -2.0394428e-07, 0.8623003, -0.5063976, 1.3043464e-06, -1.2280151e-06, 4.8465665e-07, 1, -0.8874879, 1.5485166, -3.8256613e-07)
 bones/4/enabled = true
 bones/4/position = Vector3(-0.88748795, 1.4744858, 0.0019225028)
-bones/4/rotation = Quaternion(0.03741809, -0.02410468, 0.8727198, 0.48618823)
+bones/4/rotation = Quaternion(0.039400425, -0.020779742, 0.9011906, 0.43112817)
 bones/4/scale = Vector3(1.0000001, 1, 1)
 bones/5/name = "Bone.006"
 bones/5/parent = 4
@@ -471,29 +523,29 @@ bones/6/name = "Bone.002"
 bones/6/parent = 0
 bones/6/rest = Transform3D(1, -7.105428e-15, -2.3841856e-07, 1.9256758e-07, -0.5896115, 0.807687, -1.4057433e-07, -0.80768704, -0.5896114, 0, 0, 0)
 bones/6/enabled = true
-bones/6/position = Vector3(-0.0018008868, -0.028016673, 3.974227e-09)
-bones/6/rotation = Quaternion(0.8794579, 0.074800454, 0.1470316, -0.44647577)
+bones/6/position = Vector3(0.0026523804, -0.019934565, 2.0363453e-08)
+bones/6/rotation = Quaternion(0.8834909, 0.060475715, 0.11907217, -0.44900832)
 bones/6/scale = Vector3(1, 1, 0.99999994)
 bones/7/name = "Bone.007"
 bones/7/parent = 6
 bones/7/rest = Transform3D(1, 2.0811433e-07, -1.2209223e-07, -2.0811437e-07, 0.48790783, -0.872895, -1.2209225e-07, 0.872895, 0.48790783, 0, 0.60943836, 0)
 bones/7/enabled = true
 bones/7/position = Vector3(0, 0.60943836, 0)
-bones/7/rotation = Quaternion(0.505877, -0.0022887615, 0.02280549, 0.8623011)
+bones/7/rotation = Quaternion(0.49793756, -0.017765658, 0.17701934, 0.8487678)
 bones/7/scale = Vector3(1, 0.9999998, 0.9999998)
 bones/8/name = "Bone.008"
 bones/8/parent = -1
 bones/8/rest = Transform3D(0.9231829, 0.3843551, -0.0017370266, 0.025435323, -0.065601334, -0.9975217, -0.38351622, 0.9208514, -0.070338294, 0.49333817, -1.2184206, -0.066943906)
 bones/8/enabled = true
-bones/8/position = Vector3(0.49326333, -0.87583256, -0.08133846)
-bones/8/rotation = Quaternion(0.8149228, 0.16237287, -0.10974208, 0.5454287)
+bones/8/position = Vector3(0.4933321, -1.227929, -1.1249477)
+bones/8/rotation = Quaternion(0.71748227, 0.14278767, -0.134238, 0.66843927)
 bones/8/scale = Vector3(0.99999917, 0.9999998, 1)
 bones/9/name = "Bone.009"
 bones/9/parent = -1
 bones/9/rest = Transform3D(0.92855984, -0.3711778, -0.0017274391, -0.027179945, -0.063352086, -0.997621, 0.37018523, 0.9263979, -0.06891483, -0.46782064, -1.2184206, -0.09246139)
 bones/9/enabled = true
-bones/9/position = Vector3(-0.46793333, -1.2857343, -0.46816003)
-bones/9/rotation = Quaternion(0.71444863, -0.13810885, 0.1290188, 0.67367893)
+bones/9/position = Vector3(-0.4678366, -1.1928865, 0.59247077)
+bones/9/rotation = Quaternion(0.5827152, -0.112859465, 0.15160038, 0.7903942)
 bones/9/scale = Vector3(0.9999996, 0.99999976, 0.99999994)
 
 [node name="Penguin_body_low" type="MeshInstance3D" parent="Penguin_v2/Armature/Skeleton3D" unique_id=244602075]
@@ -523,6 +575,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.221302, 1.3669279)
 
 [node name="EnemySpawner" parent="." unique_id=1969424437 instance=ExtResource("9_rgeog")]
 enemy_scene = ExtResource("10_opo22")
+
+[node name="VFX_SpellWeaver" parent="." unique_id=1561286171 instance=ExtResource("11_22xyk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.545, 0)
+mesh = SubResource("PlaneMesh_gf0v6")
+script = ExtResource("12_r3tw4")
 
 [node name="VFX_Frost" parent="." unique_id=1755837220 instance=ExtResource("11_llb5v")]
 transform = Transform3D(1, 0, 0, 0, 0.145, 0, 0, 0, 1, 0, 0.14055896, 0)
