@@ -56,7 +56,7 @@ func _setup_initial_mechanics():
 	active_gold_ids = []
 	active_prism_ids = []
 	mechanic_levels = {}
-	#_force_unlock_augment("gold_2",3)
+	#_force_unlock_augment("gold_4",1)
 	player_stats = {
 		"max_hp": 100.0, "speed": 12.5, "damage_mult": 1.0, "attack_speed": 1.0,
 		"cooldown_reduction": 0.0, "pickup_range": 20.0, "freeze_duration": 4.0,

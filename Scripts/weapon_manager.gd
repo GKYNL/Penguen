@@ -5,19 +5,16 @@ signal skill_fired(skill_name: String, cooldown: float)
 
 @export var thunder_vfx: PackedScene
 @export var echo_vfx: PackedScene
-# YENİ: Patlama efekti için değişken. Editörden "vfx/vfx_explosion.tscn" dosyasını buraya sürükle!
 @export var explosion_vfx: PackedScene 
 
 @onready var snowball_shooting_component = $snowball_shooting_component
 @onready var ice_shard_shooting_component = $ice_shard_shooting_component
 
-var unlocked_mechanics = []
 var active_auto_weapon = null 
 var cooldowns = {}
 var attack_timer: Timer
 
 func _ready():
-	# KRİTİK: Düşmanların bulabilmesi için gruba ekle
 	if not is_in_group("weapon_manager"):
 		add_to_group("weapon_manager")
 		
@@ -27,7 +24,6 @@ func _ready():
 	attack_timer.timeout.connect(_auto_primary_fire)
 	attack_timer.start(1.0) 
 	
-	# Eğer editörden atanmadıysa kodla yüklemeyi dene (Yedek plan)
 	if not explosion_vfx:
 		explosion_vfx = load("res://vfx/vfx_explosion.tscn")
 
@@ -35,52 +31,68 @@ func _process(_delta):
 	if AugmentManager.mechanic_levels.get("gold_1", 0) > 0 and not is_on_cooldown("Thunder"):
 		_execute_thunderlord()
 
-# Merkezi Ölüm Yönetimi (Patlama buraya bağlı)
+# --- MERKEZİ ANALİZ FONKSİYONU ---
+func _get_lv_data(aug_id: String):
+	var lv = AugmentManager.mechanic_levels.get(aug_id, 0)
+	if lv <= 0: return null
+	
+	# Tüm havuzları tara (Tier 1, 2, 3)
+	var pools = [AugmentManager.tier_1_pool, AugmentManager.tier_2_pool, AugmentManager.tier_3_pool]
+	for pool in pools:
+		for aug in pool:
+			if aug.id == aug_id:
+				return aug.levels[clamp(lv - 1, 0, aug.levels.size() - 1)]
+	return null
+
+# --- ÖLÜM YÖNETİMİ ---
 func on_enemy_killed(enemy_node):
 	var pos = enemy_node.global_position
 	
-	# Silver 5: Vampirism
-	var heal_val = AugmentManager.player_stats.get("lifesteal_flat", 0)
-	if heal_val > 0:
+	# Silver 5: Vampirism (Heal miktarını JSON'dan al)
+	var vamp_data = _get_lv_data("silver_5")
+	if vamp_data:
+		var heal_val = float(vamp_data.get("heal", 2.0))
 		var player = get_tree().get_first_node_in_group("player")
 		if player: player.heal(heal_val)
 	
-	# Gold 4: Chain Reaction (Patlama)
-	if AugmentManager.mechanic_levels.get("gold_4", 0) > 0:
-		var lvl = AugmentManager.mechanic_levels["gold_4"]
-		var chance = [0.1, 0.2, 0.3, 0.5][lvl-1]
+	# Gold 4: Chain Reaction (Patlama şansı ve hasar JSON'dan)
+	var chain_data = _get_lv_data("gold_4")
+	if chain_data:
+		var chance = float(chain_data.get("chance", 0.1))
 		if randf() < chance:
-			_spawn_explosion(pos, lvl)
+			_spawn_explosion(pos, chain_data)
 
-func _spawn_explosion(pos, lvl):
-	var radius = 5.0 if lvl < 3 else 8.0
-	var damage = 30.0 * lvl
+func _spawn_explosion(pos, data):
+	var radius = float(data.get("radius", 5.0))
+	var damage = float(data.get("damage", 30.0))
 	
-	# Düzeltme: Artık thunder değil explosion vfx kullanıyor
 	if explosion_vfx:
 		var vfx = explosion_vfx.instantiate()
 		get_tree().root.add_child(vfx)
 		vfx.global_position = pos
-		# Efekti oynat (Eğer scripti varsa)
 		if vfx.has_method("play_effect"):
-			vfx.play_effect(damage)
-		else:
-			# Script yoksa manuel sil
-			get_tree().create_timer(0.6).timeout.connect(vfx.queue_free)
+			vfx.play_effect(damage) # vfx_explosion zaten kendi içinde radius'u JSON'dan çekecek şekilde ayarlamıştık
 	
+	_deal_aoe_damage(pos, radius, damage)
+
+func _deal_aoe_damage(pos, radius, dmg):
 	var enemies = get_tree().get_nodes_in_group("Enemies")
 	for e in enemies:
-		if is_instance_valid(e) and e.global_position.distance_to(pos) <= radius:
-			if e.has_method("take_damage"):
-				e.take_damage(damage)
+		if is_instance_valid(e) and not e.get("is_dying") and e.global_position.distance_to(pos) <= radius:
+			e.take_damage(dmg)
 
+# --- HASAR HESAPLAMA (JSON BAZLI) ---
 func calculate_damage(base_damage: float, target_node = null) -> float:
 	var final_damage = base_damage * AugmentManager.player_stats.get("damage_mult", 1.0)
-	if target_node and AugmentManager.mechanic_levels.get("gold_5", 0) > 0:
-		if target_node.is_in_group("Tank") or target_node.get("is_tank"):
-			var lvl = AugmentManager.mechanic_levels["gold_5"]
-			final_damage *= (1.0 + [0.2, 0.4, 0.6, 1.0][lvl-1])
+	
+	# Gold 5: Giant Slayer (Tank Hasarı JSON'dan)
+	if target_node and (target_node.is_in_group("Tank") or target_node.get("is_tank")):
+		var gs_data = _get_lv_data("gold_5")
+		if gs_data:
+			var bonus = float(gs_data.get("tank_damage_mult", 0.2))
+			final_damage *= (1.0 + bonus)
 			
+	# Executioner bonusu (Stat bazlı)
 	if target_node and AugmentManager.player_stats["execution_threshold"] > 0:
 		var hp_pct = target_node.current_hp / target_node.max_hp
 		if hp_pct <= AugmentManager.player_stats["execution_threshold"]:
@@ -88,9 +100,15 @@ func calculate_damage(base_damage: float, target_node = null) -> float:
 			
 	return final_damage
 
+# --- THUNDERLORD (JSON BAZLI) ---
 func _execute_thunderlord():
-	var lv = AugmentManager.mechanic_levels["gold_1"]
-	var count = [3, 5, 8, 12][lv-1]
+	var data = _get_lv_data("gold_1")
+	if not data: return
+	
+	var count = int(data.get("count", 3))
+	var base_dmg = float(data.get("damage", 50.0))
+	var cd = float(data.get("cooldown", 5.0)) * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0))
+	
 	var enemies = get_tree().get_nodes_in_group("Enemies")
 	var valid_enemies = enemies.filter(func(e): return is_instance_valid(e) and e.current_hp > 0)
 	
@@ -100,94 +118,92 @@ func _execute_thunderlord():
 	var targets_found = 0
 	for i in range(min(count, valid_enemies.size())):
 		var target = valid_enemies[i]
-		if is_instance_valid(target):
-			targets_found += 1
-			_spawn_thunder_effect(target)
-			var dmg = calculate_damage([50, 80, 120, 200][lv-1], target)
-			target.take_damage(dmg)
+		targets_found += 1
+		_spawn_thunder_effect(target)
+		target.take_damage(calculate_damage(base_dmg, target))
 	
 	if targets_found > 0:
-		var cd = 5.0 * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0))
 		start_cooldown("Thunder", cd)
 		emit_signal("skill_fired", "Thunder", cd)
-
 func _spawn_thunder_effect(target):
-	if not thunder_vfx: return
+	if not thunder_vfx: 
+		push_warning("DEBUG: Thunder VFX sahnesi atanmamış!")
+		return
+		
 	var t_vfx = thunder_vfx.instantiate()
 	get_tree().root.add_child(t_vfx)
 	t_vfx.global_position = target.global_position
 	
+	# Görselin içindeki Mesh'i bulup materyal animasyonu yapıyoruz
 	var mesh_node = t_vfx if t_vfx is MeshInstance3D else t_vfx.find_child("MeshInstance3D", true, false)
+	
 	if mesh_node:
 		var mat = mesh_node.get_surface_override_material(0)
 		if mat:
+			# Materyali unique yapıyoruz ki tüm şimşekler aynı anda sönmesin
+			var local_mat = mat.duplicate()
+			mesh_node.set_surface_override_material(0, local_mat)
+			
 			var tw = create_tween()
-			tw.tween_property(mat, "shader_parameter/vanish", 1.0, 0.3).set_delay(0.1)
+			# 0.1 saniye parla, sonra vanish parametresiyle yok ol
+			tw.tween_property(local_mat, "shader_parameter/vanish", 1.0, 0.3).set_delay(0.1)
 			tw.finished.connect(t_vfx.queue_free)
 		else:
+			# Materyal yoksa standart zamanlayıcı ile sil
 			get_tree().create_timer(0.4).timeout.connect(t_vfx.queue_free)
 	else:
+		# Mesh bulunamazsa direkt sil
 		get_tree().create_timer(0.5).timeout.connect(t_vfx.queue_free)
+# --- AUTO FIRE (JSON BAZLI) ---
+func _auto_primary_fire():
+	if not active_auto_weapon: return
+	var target = _find_closest_enemy()
+	if not target: return
+	
+	var dir = (target.global_position - global_position).normalized()
+	dir.y = 0
+	
+	# Gold 6: Echo (Dalga sayısı JSON'dan)
+	var echo_data = _get_lv_data("gold_6")
+	var waves = int(echo_data.get("waves", 1)) if echo_data else 1
+	
+	for w in range(waves):
+		_fire_projectile_batch(dir)
+		if waves > 1: await get_tree().create_timer(0.15).timeout
 
+func _fire_projectile_batch(dir):
+	var ms_chance = AugmentManager.player_stats.get("multishot_chance", 0.0)
+	var shots = 3 if (ms_chance > 0 and randf() < ms_chance) else 1
+	
+	var comp = snowball_shooting_component if active_auto_weapon == "snowball" else ice_shard_shooting_component
+	
+	for s in range(shots):
+		var final_dir = dir
+		if shots > 1:
+			var angle = deg_to_rad((s - 1) * 15.0)
+			final_dir = dir.rotated(Vector3.UP, angle)
+		comp.shoot(final_dir)
+
+# --- YARDIMCI SİSTEMLER ---
 func _on_mechanic_unlocked(id: String):
-	if id.begins_with("start_"): active_auto_weapon = id.replace("start_", "")
+	if id.begins_with("start_"): 
+		active_auto_weapon = id.replace("start_", "")
 	_update_weapon_stats()
 
 func _update_weapon_stats():
 	if not active_auto_weapon: return
-	var weapon_id = "start_" + active_auto_weapon
-	var lv_data = _get_weapon_level_data(weapon_id)
-	
-	if lv_data:
+	var data = _get_lv_data("start_" + active_auto_weapon)
+	if data:
 		var comp = snowball_shooting_component if active_auto_weapon == "snowball" else ice_shard_shooting_component
-		var base_fire_rate = lv_data.get("fire_rate", 1.0)
-		var attack_speed_mult = AugmentManager.player_stats["attack_speed"]
-		var cdr = AugmentManager.player_stats.get("cooldown_reduction", 0.0)
-		var base_wait = 1.0 / (base_fire_rate * attack_speed_mult)
-		attack_timer.wait_time = max(0.1, base_wait * (1.0 - cdr))
-		comp.current_damage = float(lv_data.get("damage", 10.0))
-		comp.current_count = int(lv_data.get("count", 1))
-		comp.current_pierce = int(lv_data.get("pierce", 1))
-
-func _auto_primary_fire():
-	if not active_auto_weapon: return
-	var target = _find_closest_enemy()
-	if target:
-		var dir = (target.global_position - global_position).normalized()
-		dir.y = 0
-		var waves = 1
-		if AugmentManager.mechanic_levels.has("gold_6"): 
-			waves = [2, 2, 3, 4][AugmentManager.mechanic_levels["gold_6"]-1]
-		
-		for w in range(waves):
-			# Triple Shot
-			var ms_chance = AugmentManager.player_stats.get("multishot_chance", 0.0)
-			var shots = 1
-			if ms_chance > 0 and randf() < ms_chance:
-				shots = 3
-			
-			for s in range(shots):
-				var final_dir = dir
-				if shots > 1:
-					var angle = deg_to_rad((s - 1) * 15.0)
-					final_dir = dir.rotated(Vector3.UP, angle)
-
-				if active_auto_weapon == "snowball": 
-					snowball_shooting_component.shoot(final_dir)
-				else: 
-					ice_shard_shooting_component.shoot(final_dir)
-					
-			if waves > 1: await get_tree().create_timer(0.2).timeout
-
-func _get_weapon_level_data(id):
-	var lv = AugmentManager.mechanic_levels.get(id, 1)
-	for item in AugmentManager.tier_1_pool:
-		if item.id == id: return item.levels[lv-1]
-	return {}
+		var base_wait = 1.0 / (float(data.get("fire_rate", 1.0)) * AugmentManager.player_stats["attack_speed"])
+		attack_timer.wait_time = max(0.05, base_wait * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0)))
+		comp.current_damage = float(data.get("damage", 10.0))
+		comp.current_count = int(data.get("count", 1))
+		comp.current_pierce = int(data.get("pierce", 1))
 
 func _find_closest_enemy():
 	var enemies = get_tree().get_nodes_in_group("Enemies")
-	var closest = null; var min_d = 40.0
+	var closest = null; var min_d = 45.0
 	for e in enemies:
 		if is_instance_valid(e) and e.current_hp > 0:
 			var d = global_position.distance_to(e.global_position)

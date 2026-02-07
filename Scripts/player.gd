@@ -109,29 +109,45 @@ func execute_dash() -> void:
 	if wind_vfx_scene:
 		var wind = wind_vfx_scene.instantiate()
 		get_tree().root.add_child(wind)
-		wind.global_position = global_position
-		var dash_dir = Vector3(velocity.x, 0, velocity.z).normalized()
-		if dash_dir.length() > 0.1: wind.look_at(global_position + dash_dir, Vector3.UP)
-		var tw = create_tween()
-		tw.tween_property(wind, "global_position", global_position + dash_dir * 8.0, 0.4)
-		tw.parallel().tween_property(wind, "scale", Vector3.ZERO, 0.4).set_delay(0.2)
-		tw.finished.connect(wind.queue_free)
 		
-		if AugmentManager.mechanic_levels.get("gold_8", 0) >= 2:
-			var projectiles = get_tree().get_nodes_in_group("EnemyProjectile")
-			for proj in projectiles:
-				if proj.global_position.distance_to(global_position) < 5.0: proj.queue_free()
+		# Karakterin gövde hizasından başlasın
+		wind.global_position = global_position + Vector3(0, 1.2, 0)
+		
+		# YÖN HESABI
+		var move_dir = Vector3(velocity.x, 0, velocity.z).normalized()
+		if move_dir.length() < 0.1:
+			move_dir = -body_mesh.global_transform.basis.z.normalized() 
+		
+		# 1. ÖNCE HEDEFE BAKTIR (Z eksenini hizalar)
+		wind.look_at(wind.global_position + move_dir, Vector3.UP)
+		
+		# 2. EKSEN DÜZELTMESİ (Dikey/Yana yarık durması için)
+		# Plane Mesh yatay olduğu için onu X ekseninde 90 derece çevirip dikiyoruz.
+		# Eğer rüzgar hala ters bakıyorsa 90 yerine -90 ( -PI/2 ) dene.
+		wind.rotate_object_local(Vector3.RIGHT, PI/2.0) 
 
-	velocity.x *= 3.0
-	velocity.z *= 3.0
+		# Tween animasyonu
+		var tw = create_tween()
+		var target_pos = wind.global_position + move_dir * 8.0
+		tw.tween_property(wind, "global_position", target_pos, 0.4)
+		tw.parallel().tween_property(wind, "scale", Vector3(0.2, 0.2, 2.5), 0.4).set_ease(Tween.EASE_IN)
+		tw.finished.connect(wind.queue_free)
+
+	# DASH HAREKETİ
+	# Hızı anlık fırlatıyoruz
+	var dash_force = 3.5
+	velocity.x *= dash_force
+	velocity.z *= dash_force
+	
 	dash_speed_bonus = 1.6
 	var tw_bonus = create_tween()
 	tw_bonus.tween_property(self, "dash_speed_bonus", 1.0, 0.8).set_ease(Tween.EASE_OUT)
 	
+	# COOLDOWN YÖNETİMİ
 	var final_cd = (3.0 + AugmentManager.player_stats.get("dash_cooldown", 0.0)) * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0))
 	await get_tree().create_timer(max(0.4, final_cd)).timeout
-	if current_dash_charges < max_charges: current_dash_charges += 1
-
+	if current_dash_charges < max_charges:
+		current_dash_charges += 1
 func _handle_titan_form() -> void:
 	if AugmentManager.mechanic_levels.has("prism_3"):
 		var scale_bonus = 1.0 + (AugmentManager.mechanic_levels["prism_3"] * 0.15)
