@@ -13,7 +13,7 @@ var active_weapon_id = ""
 var max_gold_slots: int = 5
 var max_prism_slots: int = 2
 
-# OYUNCU STATLARI (Titan için stomp_damage dahil)
+# OYUNCU STATLARI
 var player_stats = {
 	"max_hp": 100.0,
 	"speed": 12.5,
@@ -33,7 +33,14 @@ var player_stats = {
 	"waves": 1,
 	"dash_charges": 1,
 	"thorns": 0.0,
-	"stomp_damage": 0.0  # Titan Form hasarı
+	
+	# Prism Mechanics
+	"stomp_damage": 0.0,
+	"winter_damage": 0.0,
+	"winter_radius": 0.0,
+	"winter_slow": 0.0,
+	"time_stop_duration": 0.0,
+	"time_stop_cooldown_mult": 1.0
 }
 
 var active_gold_ids = []  
@@ -49,10 +56,11 @@ func _ready() -> void:
 	load_augment_data()
 
 func initialize_game_start():
-	print("🎮 AugmentManager: Oyun başlatılıyor...")
+	print("AugmentManager: Oyun baslatiliyor...")
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
-	_force_unlock_augment("prism_4", 4) 
+	# TEST: Prism 6 (Time Stop) burada acilabilir
+	_force_unlock_augment("prism_6", 4) 
 
 func _setup_initial_mechanics():
 	current_level = 1
@@ -60,21 +68,19 @@ func _setup_initial_mechanics():
 	active_gold_ids = []
 	active_prism_ids = []
 	mechanic_levels = {}
-	# Statları sıfırla
+	
 	player_stats = {
 		"max_hp": 100.0, "speed": 12.5, "damage_mult": 1.0, "attack_speed": 1.0,
 		"cooldown_reduction": 0.0, "pickup_range": 20.0, "freeze_duration": 4.0,
 		"attack_range": 0.20, "dash_cooldown": 3.0, "lifesteal_flat": 0,
 		"execution_threshold": 0.0, "luck": 0.0, "gold_bonus": 0.0, "armor": 0.0,
 		"multishot_chance": 0.0, "waves": 1, "dash_charges": 1, "thorns": 0.0,
-		"stomp_damage": 0.0
+		"stomp_damage": 0.0, "winter_damage": 0.0, "winter_radius": 0.0, "winter_slow": 0.0,
+		"time_stop_duration": 0.0, "time_stop_cooldown_mult": 1.0
 	}
-	
-	# TEST İÇİN FORCE UNLOCK
 	
 	emit_signal("mechanic_unlocked", "init")
 
-# FORCE UNLOCK ARTIK ANA GÜNCELLEME FONKSİYONUNU KULLANIYOR
 func _force_unlock_augment(aug_id: String, level: int = 1):
 	mechanic_levels[aug_id] = level
 	
@@ -85,7 +91,6 @@ func _force_unlock_augment(aug_id: String, level: int = 1):
 
 	var found_card = null
 	for pool in [tier_1_pool, tier_2_pool, tier_3_pool]:
-		# JSON yapısı kontrolü (Dict vs Array)
 		if pool is Dictionary and pool.has("augments"):
 			for card in pool["augments"]:
 				if card.id == aug_id: found_card = card; break
@@ -95,12 +100,11 @@ func _force_unlock_augment(aug_id: String, level: int = 1):
 		if found_card: break
 
 	if found_card:
-		print("🚀 Force Unlock: ", aug_id, " Lv.", level)
-		# KRİTİK DÜZELTME: apply_augment_stats_only YERİNE BUNU KULLAN:
+		print("Force Unlock: ", aug_id, " Lv.", level)
 		_update_special_mechanic_stats(found_card, level)
 		emit_signal.call_deferred("mechanic_unlocked", aug_id)
 	else:
-		push_error("❌ Force Unlock başarısız! Kart bulunamadı: " + aug_id)
+		push_error("Force Unlock basarisiz! Kart bulunamadi: " + aug_id)
 
 func load_augment_data():
 	var file_path = "res://Data/augments.json"
@@ -111,15 +115,15 @@ func load_augment_data():
 			tier_1_pool = data.get("tier_1_pool", [])
 			tier_2_pool = data.get("tier_2_pool", [])
 			tier_3_pool = data.get("tier_3_pool", [])
-			print("✅ JSON Verisi Yüklendi.")
+			print("JSON Verisi Yuklendi.")
 		else:
-			push_error("❌ JSON Parse Hatası!")
+			push_error("JSON Parse Hatasi!")
 	else:
-		push_error("❌ augments.json bulunamadı!")
+		push_error("augments.json bulunamadi!")
 
 func apply_augment(card_data):
 	var a_id = card_data.get("id", "")
-	var a_name = card_data.get("name", "Geliştirme")
+	var a_name = card_data.get("name", "Gelistirme")
 	var a_desc = card_data.get("desc", "")
 	var type = card_data.get("type", "stat")
 	
@@ -161,12 +165,12 @@ func apply_augment(card_data):
 			
 	get_tree().paused = false
 
-# --- ANA STAT GÜNCELLEME MERKEZİ ---
+# --- ANA STAT GUNCELLEME MERKEZI ---
 func _update_special_mechanic_stats(card_data, level):
 	var a_id = card_data.get("id", "")
 	if not card_data.has("levels"): return
 	
-	print("🛠️ [AUGMENT] Güncelleniyor: ", a_id, " Hedef Level: ", level)
+	print("[AUGMENT] Guncelleniyor: ", a_id, " Hedef Level: ", level)
 	
 	var player = get_tree().get_first_node_in_group("player")
 	
@@ -181,53 +185,66 @@ func _update_special_mechanic_stats(card_data, level):
 			if player and player.has_method("update_prism_visuals"):
 				player.update_prism_visuals("prism_2", level)
 				
-		"prism_3": # TITAN FORM (KÜMÜLATİF HESAPLAMA)
-			print("🦖 [AUGMENT] Titan Form (Kümülatif) Hesaplanıyor...")
-			
-			# Titan statlarını sıfırla (Base değerlere çek)
-			# Not: Max HP'yi sıfırlamıyoruz, sadece bonusu yeniden hesaplayacağız.
-			# Ama oyun içi artış olduğu için, basitçe şu anki level'a kadar olan her şeyi topluyoruz.
-			
-			# Geçici değişkenler
+		"prism_3": # TITAN FORM
+			print("[AUGMENT] Titan Form (Kumulatif) Hesaplaniyor...")
 			var total_hp_bonus = 0.0
 			var total_armor = 0.0
-			var total_dmg_mult = 0.0 # Base harici eklenecek
+			var total_dmg_mult = 0.0
 			var current_stomp = 0.0
 			
-			# 1'den Şu anki Level'a kadar dön
 			for i in range(level):
 				var d = card_data["levels"][i]
-				
 				if d.has("hp_bonus"): total_hp_bonus += float(d["hp_bonus"])
-				if d.has("armor"): total_armor += float(d["armor"]) # Genelde armoru direkt set ederiz ama toplayalım
+				if d.has("armor"): total_armor += float(d["armor"])
 				if d.has("dmg_bonus"): total_dmg_mult += float(d["dmg_bonus"])
-				if d.has("stomp_dmg"): current_stomp = float(d["stomp_dmg"]) # Stomp genelde son seviyeyi alır
+				if d.has("stomp_dmg"): current_stomp = float(d["stomp_dmg"])
 			
-			# HESAPLANAN TOPLAMLARI UYGULA
-			
-			# HP: Önceki eklemeleri bilmediğimiz için, bu biraz triklli. 
-			# En temiz yöntem: Eğer force unlock yapıyorsak direkt ekle.
-			# Ama oyun içi level atlıyorsak sadece farkı eklememiz lazımdı.
-			# ŞU ANKİ DURUM (Force Unlock) İÇİN:
-			# Player stats'ı resetlemediğimiz için, manuel olarak "sadece bu levelın getirdiğini" değil
-			# toplam olması gerekeni set etmeliyiz.
-			
-			# ÇÖZÜM: Player stats'taki max_hp'yi base (100) + total_bonus yapalım.
 			player_stats["max_hp"] = 100.0 + total_hp_bonus
-			
 			player_stats["armor"] = total_armor
-			# Damage mult base 1.0 varsayarsak
 			player_stats["damage_mult"] = 1.0 + total_dmg_mult
 			player_stats["stomp_damage"] = current_stomp
 			
-			print("   📊 SONUÇ -> MaxHP: %s (+%s), Armor: %s, Stomp: %s" % [
+			print("   SONUC -> MaxHP: %s (+%s), Armor: %s, Stomp: %s" % [
 				player_stats["max_hp"], total_hp_bonus, total_armor, current_stomp
 			])
 
-	# PLAYER GÜNCELLEME
+		"prism_5": # ETERNAL WINTER
+			print("[AUGMENT] Eternal Winter Hesaplaniyor...")
+			var total_dmg = 0.0
+			var max_radius = 8.0
+			var total_slow = 0.0
+			
+			for i in range(level):
+				var d = card_data["levels"][i]
+				if d.has("damage"): total_dmg += float(d["damage"])
+				if d.has("radius"): max_radius = float(d["radius"])
+				if d.has("freeze"): total_slow = float(d["freeze"])
+			
+			player_stats["winter_damage"] = total_dmg
+			player_stats["winter_radius"] = max_radius
+			player_stats["winter_slow"] = total_slow
+			
+			print("   Winter Stats -> Dmg: %s, Rad: %s, Slow: %s" % [total_dmg, max_radius, total_slow])
+			
+		"prism_6": # TIME STOP
+			print("[AUGMENT] Time Stop Guncelleniyor...")
+			var dur = 0.0
+			var cd_mult = 1.0
+			var d = card_data["levels"][level-1]
+			
+			if d.has("duration"): dur = float(d["duration"])
+			if d.has("cd"): cd_mult = float(d["cd"])
+			
+			player_stats["time_stop_duration"] = dur
+			player_stats["time_stop_cooldown_mult"] = cd_mult
+			
+			print("   Time Stop -> Sure: %s sn, CD Carpani: %s" % [dur, cd_mult])
+
+	# PLAYER GUNCELLEME
 	if player and player.has_method("sync_stats_from_manager"):
-		print("📡 [AUGMENT] Player Senkronize Ediliyor...")
+		print("[AUGMENT] Player Senkronize Ediliyor...")
 		player.sync_stats_from_manager()
+
 func _prepare_card(card):
 	var prepared = card.duplicate(true)
 	var cur_lvl = mechanic_levels.get(prepared.id, 0)
@@ -244,7 +261,6 @@ func _prepare_card(card):
 			prepared["name"] = prepared["name"] + " (MAX)"
 	return prepared
 
-# ... (Kalan standart fonksiyonlar: can_unlock, level_up vb. aynı kalıyor) ...
 func can_unlock_mechanic(id: String) -> bool:
 	if mechanic_levels.has(id): return true
 	var rarity = _get_rarity_from_json(id)

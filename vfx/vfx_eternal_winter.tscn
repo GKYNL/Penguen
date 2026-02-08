@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://cndn6ux1wgolh"]
+
+[ext_resource type="Shader" uid="uid://yd1rttnj5ms0" path="res://shaders/ice_blizzard.gdshader" id="1_uhs8p"]
+[ext_resource type="Script" uid="uid://ht30bjthm0rs" path="res://Scripts/vfx_eternal_winter.gd" id="2_sgauy"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_l5ufc"]
+noise_type = 0
+frequency = 0.02
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_57dxf"]
+noise = SubResource("FastNoiseLite_l5ufc")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ckfyh"]
+render_priority = 0
+shader = ExtResource("1_uhs8p")
+shader_parameter/base_color = Color(0.4789484, 0.701308, 1, 1)
+shader_parameter/snow_color = Color(0.55687726, 1, 0.9960689, 1)
+shader_parameter/intensity = 1.0
+shader_parameter/time_speed = 1.0
+shader_parameter/noise_tex = SubResource("NoiseTexture2D_57dxf")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_aoah4"]
+material = SubResource("ShaderMaterial_ckfyh")
+size = Vector2(1, 1)
+
+[node name="VFX_EternalWinter" type="MeshInstance3D" unique_id=284511672]
+mesh = SubResource("PlaneMesh_aoah4")
+script = ExtResource("2_sgauy")

@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://cpv1cd2hkvbl5"]
+
+[ext_resource type="Script" uid="uid://dud7sjni2wt4u" path="res://Scripts/vfx_time_stop.gd" id="1_jwm5o"]
+[ext_resource type="Shader" uid="uid://dpjvyjodxuiys" path="res://shaders/time_stop_screen.gdshader" id="2_064e6"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tus0x"]
+shader = ExtResource("2_064e6")
+shader_parameter/intensity = 0.0
+
+[node name="VFX_TimeStop" type="CanvasLayer" unique_id=816357205]
+layer = -1
+script = ExtResource("1_jwm5o")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=220438748]
+material = SubResource("ShaderMaterial_tus0x")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

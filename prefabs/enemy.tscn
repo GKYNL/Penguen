@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c8cedrp6g3fso"]
 
-[ext_resource type="Script" uid="uid://bve4nj3qxjyg1" path="res://enemy.gd" id="1_abmcg"]
+[ext_resource type="Script" uid="uid://bve4nj3qxjyg1" path="res://Scripts/enemy.gd" id="1_abmcg"]
 [ext_resource type="PackedScene" uid="uid://bq2writufqw1f" path="res://xp.tscn" id="2_aivmq"]
 [ext_resource type="PackedScene" uid="uid://bkovv3tqoshmv" path="res://levels/projectiles/enemy_projectile.tscn" id="3_qnk7q"]
 [ext_resource type="PackedScene" uid="uid://c66eve0871x3x" path="res://vfx/vfx_explosion.tscn" id="4_2nw32"]
