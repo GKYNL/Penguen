@@ -28,21 +28,22 @@ var dash_speed_bonus: float = 1.0
 var current_dash_charges: int = 1
 var aura_timer: Timer
 
-# Titan Degiskenleri
+# Titan
 var stomp_timer: float = 0.0
 var stomp_interval: float = 0.6
 
-# Black Hole Degiskenleri
+# Black Hole
 var black_hole_timer: float = 0.0
 var black_hole_cooldown: float = 8.0
 
-# Eternal Winter Degiskenleri
+# Eternal Winter
 var winter_tick_timer: float = 0.0
 
-# Time Stop Degiskenleri
+# Time Stop
 var time_stop_timer: float = 0.0
 var base_time_stop_cd: float = 30.0
 var is_time_stopped: bool = false
+var time_stop_remaining_duration: float = 0.0 # YENİ: Manuel Sayaç
 
 func _ready() -> void:
 	add_to_group("player")
@@ -75,7 +76,6 @@ func _ready() -> void:
 		var path = "res://vfx/vfx_time_stop.tscn"
 		if ResourceLoader.exists(path): time_stop_vfx_scene = load(path)
 	
-	# Winter Aura instance varsa modunu ayarla (Oyun durunca donsun)
 	if winter_aura_instance: 
 		winter_aura_instance.hide()
 		winter_aura_instance.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -87,19 +87,31 @@ func sync_stats_from_manager():
 	var new_max = stats["max_hp"]
 	
 	if new_max > current_hp:
-		if current_hp >= (new_max - 550.0): 
-			current_hp = new_max
-		else:
-			current_hp += (new_max - 100.0)
+		if current_hp >= (new_max - 550.0): current_hp = new_max
+		else: current_hp += (new_max - 100.0)
 	
 	health_changed.emit(current_hp, new_max)
-	print("[PLAYER] Sync Tamam. HP: %s/%s, Armor: %s, Stomp: %s" % [
-		current_hp, new_max, stats["armor"], stats["stomp_damage"]
-	])
+	print("[PLAYER] Sync Tamam. HP: %s/%s" % [current_hp, new_max])
 
 func _physics_process(delta: float) -> void:
-	# Eger zaman durmussa, bazi mekanikler calismasin ama player hareket etsin
-	if not is_time_stopped:
+	# 1. KART SEÇİMİ KONTROLÜ
+	# Eğer kart seçimi açıksa, Player da dahil her şey DURSUN.
+	if AugmentManager.is_selection_active:
+		return 
+
+	# 2. TIME STOP MANTIĞI (MANUEL SAYAÇ)
+	if is_time_stopped:
+		time_stop_remaining_duration -= delta
+		if time_stop_remaining_duration <= 0.0:
+			_end_time_stop()
+		
+		# Zaman durduğunda sadece bu mekanikler çalışır:
+		_handle_look_at(delta)
+		_handle_movement_logic(delta)
+		# Diğer mekanik sayaçları (Black Hole vb) Time Stop süresince ilerlemez!
+	
+	else:
+		# Zaman Akıyor: Her şey normal çalışsın
 		_handle_look_at(delta)
 		_handle_movement_logic(delta)
 		_manage_aura_visibility()
@@ -107,125 +119,8 @@ func _physics_process(delta: float) -> void:
 		_handle_black_hole_mechanic(delta)
 		_handle_winter_mechanic(delta)
 		_handle_time_stop_mechanic(delta)
-	else:
-		# Zaman durdugunda sadece hareket ve look_at calisir
-		_handle_look_at(delta)
-		_handle_movement_logic(delta)
-		# Sayaclar ilerlemez
 	
 	move_and_slide()
-
-# --- TITAN FORM ---
-func _handle_titan_mechanics(delta: float) -> void:
-	if not AugmentManager.mechanic_levels.has("prism_3"): return
-	
-	var lv = AugmentManager.mechanic_levels["prism_3"]
-	
-	# Scale
-	var target_scale_val = 1.5 + ((lv - 1) * 0.15) 
-	var target_vec = Vector3.ONE * target_scale_val
-	scale = scale.lerp(target_vec, delta * 2.0)
-	
-	# Stomp
-	var s_dmg = AugmentManager.player_stats.get("stomp_damage", 0.0)
-	var horizontal_speed = Vector2(velocity.x, velocity.z).length()
-	
-	if s_dmg > 0 and horizontal_speed > 2.0 and is_on_floor():
-		stomp_timer -= delta
-		if stomp_timer <= 0.0:
-			stomp_timer = stomp_interval
-			_execute_titan_stomp_guaranteed(s_dmg)
-
-func _execute_titan_stomp_guaranteed(damage_amount: float):
-	var hit_range = 4.0 * scale.x 
-	var enemies = get_tree().get_nodes_in_group("Enemies")
-	var hit_count = 0
-	
-	for enemy in enemies:
-		if not is_instance_valid(enemy): continue
-		if global_position.distance_to(enemy.global_position) <= hit_range:
-			if enemy.has_method("take_damage"):
-				enemy.take_damage(damage_amount)
-				hit_count += 1
-	
-	if hit_count > 0:
-		print("STOMP! %d dusmana %.0f hasar verildi!" % [hit_count, damage_amount])
-	
-	# VFX
-	if stomp_vfx_scene:
-		var vfx = stomp_vfx_scene.instantiate()
-		get_tree().root.add_child(vfx)
-		
-		# DUZELTME: Stomp efekti de zaman durunca donmali
-		vfx.process_mode = Node.PROCESS_MODE_PAUSABLE
-		
-		vfx.global_position = global_position
-		var effect_scale = scale.x * 1.0 
-		vfx.scale = Vector3(effect_scale, 1.0, effect_scale)
-	
-	if camera.has_method("add_trauma"):
-		camera.add_trauma(0.35)
-
-# --- ETERNAL WINTER ---
-func _handle_winter_mechanic(delta: float):
-	if not AugmentManager.mechanic_levels.has("prism_5"): return
-	
-	var stats = AugmentManager.player_stats
-	var radius = stats.get("winter_radius", 8.0)
-	var dmg = stats.get("winter_damage", 0.0)
-	var slow = stats.get("winter_slow", 0.0)
-	
-	winter_tick_timer -= delta
-	if winter_tick_timer <= 0.0:
-		winter_tick_timer = 0.25 
-		var tick_damage = dmg * 0.25 
-		
-		var enemies = get_tree().get_nodes_in_group("Enemies")
-		for enemy in enemies:
-			if not is_instance_valid(enemy): continue
-			var dist = global_position.distance_to(enemy.global_position)
-			if dist <= radius:
-				if tick_damage > 0 and enemy.has_method("take_damage"):
-					enemy.take_damage(tick_damage)
-				if slow > 0 and enemy.has_method("apply_slow"):
-					enemy.apply_slow(slow, 0.5)
-
-# --- BLACK HOLE ---
-func _handle_black_hole_mechanic(delta: float):
-	if not AugmentManager.mechanic_levels.has("prism_4"): return
-
-	black_hole_timer -= delta
-	if black_hole_timer <= 0.0:
-		black_hole_timer = black_hole_cooldown
-		_spawn_black_hole()
-
-func _spawn_black_hole():
-	var target_pos = global_position 
-	var wm = weapon_manager
-	if not is_instance_valid(wm): wm = get_tree().get_first_node_in_group("weapon_manager")
-	if is_instance_valid(wm) and wm.has_method("_find_closest_enemy"):
-		var enemy = wm._find_closest_enemy()
-		if is_instance_valid(enemy):
-			target_pos = enemy.global_position
-
-	var bh_scene = load("res://vfx/vfx_black_hole.tscn")
-	if bh_scene:
-		var bh = bh_scene.instantiate()
-		get_tree().root.add_child(bh)
-		
-		# DUZELTME: Black Hole zaman durunca donmali (Omru azalmamali)
-		bh.process_mode = Node.PROCESS_MODE_PAUSABLE
-		
-		bh.global_position = target_pos
-
-		var lv = AugmentManager.mechanic_levels["prism_4"]
-		var stats = {}
-		if lv == 1: stats = {"radius": 10}
-		elif lv == 2: stats = {"radius": 15}
-		elif lv == 3: stats = {"radius": 15, "damage": 40}
-		elif lv >= 4: stats = {"radius": 22, "damage": 100}
-
-		bh.setup_from_level(stats)
 
 # --- TIME STOP ---
 func _handle_time_stop_mechanic(delta: float):
@@ -248,33 +143,128 @@ func _handle_time_stop_mechanic(delta: float):
 func _trigger_time_stop(duration: float):
 	print("ZA WARUDO! Zaman %s saniyeligine durdu!" % duration)
 	is_time_stopped = true
+	time_stop_remaining_duration = duration # Sayaç başladı
 	
 	# VFX
 	if not time_stop_instance:
 		if time_stop_vfx_scene:
 			time_stop_instance = time_stop_vfx_scene.instantiate()
-			# Time Stop VFX'i oyun donukken CALISMALI ki efekti gorelim
 			time_stop_instance.process_mode = Node.PROCESS_MODE_ALWAYS
 			add_child(time_stop_instance)
 	
-	if time_stop_instance and time_stop_instance.has_method("play_effect"):
-		time_stop_instance.play_effect(duration)
+	if time_stop_instance and time_stop_instance.has_method("start_effect"):
+		time_stop_instance.start_effect()
 	
 	get_tree().paused = true
-	
-	await get_tree().create_timer(duration, true, false, true).timeout
-	
-	get_tree().paused = false
-	is_time_stopped = false
+
+func _end_time_stop():
 	print("Zaman akmaya devam ediyor.")
+	is_time_stopped = false
+	get_tree().paused = false
+	
+	if time_stop_instance and time_stop_instance.has_method("stop_effect"):
+		time_stop_instance.stop_effect()
+
+# --- DİĞER MEKANİKLER (Titan, Black Hole, Winter) ---
+# ... (Kısalttım, içeriği aynı kalacak) ...
+
+func _handle_titan_mechanics(delta: float) -> void:
+	if not AugmentManager.mechanic_levels.has("prism_3"): return
+	var lv = AugmentManager.mechanic_levels["prism_3"]
+	var target_scale_val = 1.5 + ((lv - 1) * 0.15) 
+	var target_vec = Vector3.ONE * target_scale_val
+	scale = scale.lerp(target_vec, delta * 2.0)
+	
+	var s_dmg = AugmentManager.player_stats.get("stomp_damage", 0.0)
+	var horizontal_speed = Vector2(velocity.x, velocity.z).length()
+	
+	if s_dmg > 0 and horizontal_speed > 2.0 and is_on_floor():
+		stomp_timer -= delta
+		if stomp_timer <= 0.0:
+			stomp_timer = stomp_interval
+			_execute_titan_stomp(s_dmg)
+
+func _execute_titan_stomp(damage_amount: float):
+	var hit_range = 4.0 * scale.x 
+	var enemies = get_tree().get_nodes_in_group("Enemies")
+	var hit_count = 0 # Değişken burada tanımlandı
+	
+	for enemy in enemies:
+		if not is_instance_valid(enemy): continue
+		if global_position.distance_to(enemy.global_position) <= hit_range:
+			if enemy.has_method("take_damage"):
+				enemy.take_damage(damage_amount)
+				hit_count += 1 # Burada artırılıyor
+	
+	# Hatanın çözümü: Değişkeni burada bir print içinde kullanarak 'kullanılmış' sayılmasını sağlıyoruz.
+	if hit_count > 0:
+		print("STOMP! %d dusmana %.0f hasar verildi!" % [hit_count, damage_amount])
+	
+	if stomp_vfx_scene:
+		var vfx = stomp_vfx_scene.instantiate()
+		get_tree().root.add_child(vfx)
+		vfx.process_mode = Node.PROCESS_MODE_PAUSABLE
+		vfx.global_position = global_position
+		var effect_scale = scale.x * 1.0 
+		vfx.scale = Vector3(effect_scale, 1.0, effect_scale)
+	
+	if camera.has_method("add_trauma"):
+		camera.add_trauma(0.35)
+
+func _handle_winter_mechanic(delta: float):
+	if not AugmentManager.mechanic_levels.has("prism_5"): return
+	var stats = AugmentManager.player_stats
+	var radius = stats.get("winter_radius", 8.0)
+	var dmg = stats.get("winter_damage", 0.0)
+	var slow = stats.get("winter_slow", 0.0)
+	
+	winter_tick_timer -= delta
+	if winter_tick_timer <= 0.0:
+		winter_tick_timer = 0.25 
+		var tick_damage = dmg * 0.25 
+		var enemies = get_tree().get_nodes_in_group("Enemies")
+		for enemy in enemies:
+			if not is_instance_valid(enemy): continue
+			var dist = global_position.distance_to(enemy.global_position)
+			if dist <= radius:
+				if tick_damage > 0 and enemy.has_method("take_damage"): enemy.take_damage(tick_damage)
+				if slow > 0 and enemy.has_method("apply_slow"): enemy.apply_slow(slow, 0.5)
+
+func _handle_black_hole_mechanic(delta: float):
+	if not AugmentManager.mechanic_levels.has("prism_4"): return
+	black_hole_timer -= delta
+	if black_hole_timer <= 0.0:
+		black_hole_timer = black_hole_cooldown
+		_spawn_black_hole()
+
+func _spawn_black_hole():
+	var target_pos = global_position 
+	var wm = weapon_manager
+	if not is_instance_valid(wm): wm = get_tree().get_first_node_in_group("weapon_manager")
+	if is_instance_valid(wm) and wm.has_method("_find_closest_enemy"):
+		var enemy = wm._find_closest_enemy()
+		if is_instance_valid(enemy): target_pos = enemy.global_position
+
+	var bh_scene = load("res://vfx/vfx_black_hole.tscn")
+	if bh_scene:
+		var bh = bh_scene.instantiate()
+		get_tree().root.add_child(bh)
+		bh.process_mode = Node.PROCESS_MODE_PAUSABLE
+		bh.global_position = target_pos
+		var lv = AugmentManager.mechanic_levels["prism_4"]
+		var stats = {}
+		if lv == 1: stats = {"radius": 10}
+		elif lv == 2: stats = {"radius": 15}
+		elif lv == 3: stats = {"radius": 15, "damage": 40}
+		elif lv >= 4: stats = {"radius": 22, "damage": 100}
+		bh.setup_from_level(stats)
 
 # --- STANDART FONKSİYONLAR ---
 func take_damage(amount: float) -> void:
 	var armor = AugmentManager.player_stats.get("armor", 0.0)
 	var reduced_damage = amount * (100.0 / (100.0 + armor))
-	print("Hasar Alindi: %.1f (Armor: %.0f -> Net: %.1f)" % [amount, armor, reduced_damage])
 	var thorns_dmg = AugmentManager.player_stats.get("thorns", 0.0)
-	if thorns_dmg > 0: _execute_titan_stomp_guaranteed(thorns_dmg)
+	if thorns_dmg > 0: _execute_titan_stomp(thorns_dmg)
 	current_hp = clamp(current_hp - reduced_damage, 0, AugmentManager.player_stats["max_hp"])
 	health_changed.emit(current_hp, AugmentManager.player_stats["max_hp"])
 
@@ -292,22 +282,16 @@ func _manage_aura_visibility() -> void:
 		if not spell_weaver_aura.visible: spell_weaver_aura.show(); _animate_vfx_entry(spell_weaver_aura)
 		if spell_weaver_aura.has_method("set_level"): spell_weaver_aura.set_level(levels["prism_2"])
 	
-	# Eternal Winter
 	if levels.has("prism_5"):
 		if not is_instance_valid(winter_aura_instance):
 			if winter_vfx_scene:
 				winter_aura_instance = winter_vfx_scene.instantiate()
 				winter_aura_instance.name = "VFX_EternalWinter"
-				# DUZELTME: Winter efekti Player ile yuruse bile zaman durunca animasyonu donmali
 				winter_aura_instance.process_mode = Node.PROCESS_MODE_PAUSABLE
 				add_child(winter_aura_instance)
-		
 		if winter_aura_instance:
-			if not winter_aura_instance.visible:
-				winter_aura_instance.show()
-				_animate_vfx_entry(winter_aura_instance)
-			if winter_aura_instance.has_method("set_radius"):
-				winter_aura_instance.set_radius(AugmentManager.player_stats["winter_radius"])
+			if not winter_aura_instance.visible: winter_aura_instance.show(); _animate_vfx_entry(winter_aura_instance)
+			if winter_aura_instance.has_method("set_radius"): winter_aura_instance.set_radius(AugmentManager.player_stats["winter_radius"])
 
 func _animate_vfx_entry(node):
 	node.scale = Vector3.ZERO
@@ -341,16 +325,30 @@ func _handle_look_at(delta: float) -> void:
 	var target_dir: Vector3 = Vector3.ZERO
 	var wm = weapon_manager
 	if not is_instance_valid(wm): wm = get_tree().get_first_node_in_group("weapon_manager")
+	
 	if is_instance_valid(wm) and wm.has_method("_find_closest_enemy"):
 		var enemy = wm._find_closest_enemy()
 		if is_instance_valid(enemy) and enemy.current_hp > 0:
-			target_dir = (enemy.global_position - global_position).normalized()
-	if target_dir.length() < 0.1 and velocity.length() > 0.1: target_dir = velocity.normalized()
+			var dist = global_position.distance_to(enemy.global_position)
+			# FIX: Düşman çok yakındaysa (0.5m) dönmeye çalışma, titreme yapar.
+			if dist > 0.5: 
+				target_dir = (enemy.global_position - global_position).normalized()
+	
+	# Eğer düşman yoksa hareket yönüne bak
+	if target_dir.length() < 0.1 and velocity.length() > 0.1: 
+		target_dir = velocity.normalized()
+		
 	if target_dir.length() > 0.1:
-		target_dir.y = 0
+		target_dir.y = 0 # Y eksenini sıfırla
+		target_dir = target_dir.normalized() # Tekrar normalize et
+		
+		# FIX: Vektör (0,0,0) ise veya Yukarı vektörüyle çakışıyorsa dönme!
+		if target_dir.is_equal_approx(Vector3.ZERO) or abs(target_dir.dot(Vector3.UP)) > 0.95:
+			return 
+			
 		var look_transform = body_mesh.global_transform.looking_at(global_position + target_dir, Vector3.UP)
 		look_transform.basis = look_transform.basis.rotated(Vector3.UP, PI)
-		body_mesh.global_transform = body_mesh.global_transform.interpolate_with(look_transform, delta * 30.0)
+		body_mesh.global_transform = body_mesh.global_transform.interpolate_with(look_transform, delta * 25.0)
 		body_mesh.rotation.x = 0; body_mesh.rotation.z = 0
 
 func _handle_movement_logic(delta: float) -> void:
@@ -381,10 +379,7 @@ func execute_dash() -> void:
 	if wind_vfx_scene:
 		var wind = wind_vfx_scene.instantiate()
 		get_tree().root.add_child(wind)
-		
-		# Dash efekti zamani deler mi delmez mi? Genelde delmez, donsun.
 		wind.process_mode = Node.PROCESS_MODE_PAUSABLE
-		
 		wind.global_position = global_position + Vector3(0, 1.2, 0)
 		var move_dir = Vector3(velocity.x, 0, velocity.z).normalized()
 		if move_dir.length() < 0.1: move_dir = -body_mesh.global_transform.basis.z.normalized() 
@@ -399,11 +394,9 @@ func execute_dash() -> void:
 	dash_speed_bonus = 1.6
 	var tw_bonus = create_tween()
 	tw_bonus.tween_property(self, "dash_speed_bonus", 1.0, 0.8).set_ease(Tween.EASE_OUT)
-	
 	if AugmentManager.mechanic_levels.has("prism_3"):
 		var s_dmg = AugmentManager.player_stats.get("stomp_damage", 0.0)
-		if s_dmg > 0: _execute_titan_stomp_guaranteed(s_dmg)
-		
+		if s_dmg > 0: _execute_titan_stomp(s_dmg)
 	var final_cd = (3.0 + AugmentManager.player_stats.get("dash_cooldown", 0.0)) * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0))
 	await get_tree().create_timer(max(0.4, final_cd)).timeout
 	if current_dash_charges < max_charges: current_dash_charges += 1

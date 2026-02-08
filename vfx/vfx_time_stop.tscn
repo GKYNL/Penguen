@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dud7sjni2wt4u" path="res://Scripts/vfx_time_stop.gd" id="1_jwm5o"]
 [ext_resource type="Shader" uid="uid://dpjvyjodxuiys" path="res://shaders/time_stop_screen.gdshader" id="2_064e6"]
+[ext_resource type="AudioStream" uid="uid://c3u7rm554wtkl" path="res://Za Warudo - Sound Effect.mp3" id="3_064e6"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_tus0x"]
 shader = ExtResource("2_064e6")
@@ -18,3 +19,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="ZaWarudoSoundEffect" type="AudioStreamPlayer" parent="." unique_id=332050088]
+stream = ExtResource("3_064e6")

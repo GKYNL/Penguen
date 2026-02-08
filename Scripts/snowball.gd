@@ -1,14 +1,23 @@
 extends Area3D
 
-@export var speed: float = 25.0 # Daha yavaş
-var damage: float = 10.0 # WeaponManager'dan gelir
-var pierce: int = 1      # Genelde 1 kalır
+@export var speed: float = 25.0 
+var damage: float = 10.0 
+var pierce: int = 1      
 var is_exploding: bool = false
 
 @onready var csg_sphere: CSGSphere3D = $CSGSphere3D
 
 func _ready():
-	get_tree().create_timer(3.0).timeout.connect(queue_free)
+	# ESKİ KOD (SİLİNDİ): get_tree().create_timer(3.0).timeout.connect(queue_free)
+	
+	# YENİ KOD: Fiziksel Timer oluştur
+	# Bu timer, Snowball'un bir parçası olduğu için Snowball donunca bu da durur.
+	var timer = Timer.new()
+	timer.wait_time = 3.0
+	timer.one_shot = true
+	timer.autostart = true
+	timer.timeout.connect(queue_free)
+	add_child(timer)
 
 func _physics_process(delta):
 	if is_exploding: return

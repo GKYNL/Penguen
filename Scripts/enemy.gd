@@ -1,255 +1,235 @@
 extends CharacterBody3D
 
-enum EnemyType { MELEE, ARCHER }
+# Düşman Tipleri
+enum Type { FODDER = 0, TANK = 1, ARCHER = 2 }
 
-const STAGE_COLORS := {
-	1: Color.DARK_GOLDENROD, 2: Color.GREEN, 3: Color.BLUE,
-	4: Color.PURPLE, 5: Color.ORANGE, 6: Color.RED, 7: Color.BLACK
-}
-const FROZEN_COLOR := Color(0.267, 0.655, 1.0, 1.0)
+# Görsel Ayarlar (Renkler)
+const COLOR_FODDER = Color(0.9, 0.3, 0.3)
+const COLOR_TANK = Color(0.2, 0.7, 0.2)
+const COLOR_ARCHER = Color(0.9, 0.6, 0.1)
+const COLOR_ELITE = Color(0.6, 0.2, 0.9)
+const FROZEN_COLOR = Color(0.3, 0.7, 1.0)
+const GLOW_INTENSITY = 3.0
 
+# Temel Değişkenler
+var my_type: int = Type.FODDER
+var is_elite: bool = false
 var is_dying: bool = false
+var is_frozen: bool = false
 
+# Statlar
+var max_hp: float = 30.0
+var current_hp: float = 30.0
+var damage: float = 10.0
+var speed: float = 6.0
+var xp_reward: int = 10 # DÜZELTME: Değişken adı xp_reward yapıldı
+
+# Okçu & Saldırı
+var attack_range: float = 2.0
+var shoot_cooldown: float = 0.0
+var can_attack: bool = true
+
+# Referanslar
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var player = get_tree().get_first_node_in_group("player")
-@onready var execution_mark = get_node_or_null("ExecutionMark")
-
-var logic_timer: Timer
-
-@export var explosion_vfx_scene: PackedScene 
-@export var xp_orb_scene: PackedScene 
 @export var projectile_scene: PackedScene 
-@export var movement_speed: float = 6.5 
-@export var attack_range: float = 2.5
-@export var attack_cooldown: float = 1.0
-@export var stage: int = 1: 
-	set(value):
-		stage = clamp(value, 1, 7)
-		if is_inside_tree():
-			setup_stats_by_stage()
-			update_visuals()
+@export var xp_orb_scene: PackedScene 
 
-var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
-var max_hp := 30.0
-var current_hp := 30.0
-var damage := 10.0
-var xp_reward := 100
-var is_elite := false
-var is_frozen := false
-var can_attack := true
-var type: EnemyType = EnemyType.MELEE
-
-# Yavaşlatma Değişkenleri
-var current_slow_factor: float = 0.0
-var slow_timer: Timer
+var active_labels: Array[Label3D] = []
 
 func _ready():
 	add_to_group("Enemies")
-	setup_stats_by_stage()
-	update_visuals()
-	if execution_mark: execution_mark.hide()
+
+# --- SPAWNER İÇİN KOMUT SETİ ---
+
+func setup_standard(type_id: int, hp_mod: float, spd_mod: float):
+	cleanup()
+	is_elite = false
+	is_frozen = false
+	is_dying = false
+	my_type = type_id
+	scale = Vector3.ONE
 	
-	logic_timer = Timer.new()
-	add_child(logic_timer)
-	logic_timer.wait_time = 0.1
-	logic_timer.timeout.connect(_on_logic_tick)
-	logic_timer.start()
+	match my_type:
+		Type.FODDER:
+			max_hp = 30.0 * hp_mod
+			speed = 7.0 * spd_mod
+			damage = 10.0
+			attack_range = 2.0
+			xp_reward = 10 # DÜZELTİLDİ
+		Type.TANK:
+			max_hp = 90.0 * hp_mod
+			speed = 4.5 * spd_mod
+			damage = 25.0
+			attack_range = 2.5
+			xp_reward = 30 # DÜZELTİLDİ
+			scale = Vector3.ONE * 1.4
+		Type.ARCHER:
+			max_hp = 40.0 * hp_mod
+			speed = 6.0 * spd_mod
+			damage = 15.0
+			attack_range = 14.0
+			xp_reward = 20 # DÜZELTİLDİ
+			scale = Vector3(0.8, 1.2, 0.8)
 	
-	# Slow reset timer
-	slow_timer = Timer.new()
-	slow_timer.one_shot = true
-	add_child(slow_timer)
-	slow_timer.timeout.connect(func(): current_slow_factor = 0.0)
+	current_hp = max_hp
+	_update_visuals()
+	reset_physics()
+
+func setup_elite(hp_mod: float, spd_mod: float):
+	cleanup()
+	is_elite = true
+	is_frozen = false
+	is_dying = false
+	my_type = Type.TANK 
+	
+	scale = Vector3.ONE * 2.2
+	max_hp = 400.0 * hp_mod
+	speed = 5.5 * spd_mod
+	damage = 40.0
+	attack_range = 3.5
+	xp_reward = 500 # DÜZELTİLDİ
+	
+	current_hp = max_hp
+	_update_visuals()
+	reset_physics()
+
+func reset_physics():
+	collision_layer = 2
+	collision_mask = 7 
+	show()
+	process_mode = Node.PROCESS_MODE_PAUSABLE
+
+func cleanup():
+	for l in active_labels: if is_instance_valid(l): l.queue_free()
+	active_labels.clear()
+
+# --- OYUN MANTIĞI ---
 
 func _physics_process(delta):
-	if current_hp <= 0 or is_dying or is_frozen: 
-		velocity = Vector3.ZERO
-		return
-	if not is_on_floor(): 
-		velocity.y -= gravity * delta * 4.0
+	if is_dying or is_frozen: return
+	if not is_instance_valid(player): return
+	
+	if not is_on_floor(): velocity.y -= 9.8 * delta
+	
+	var dist = global_position.distance_to(player.global_position)
+	var dir = (player.global_position - global_position).normalized()
+	dir.y = 0
+	
+	if my_type == Type.ARCHER:
+		_behavior_archer(dist, dir, delta)
 	else:
-		velocity.y = 0
+		_behavior_melee(dist, dir, delta)
+	
 	move_and_slide()
-
-func _on_logic_tick():
-	if is_dying or is_frozen or player == null: return
-	var diff = player.global_position - global_position
-	diff.y = 0
-	var dist = diff.length()
-	var dir = diff.normalized()
-
-	# HIZ HESABI: Yavaşlatma faktörünü uygula
-	var final_speed = movement_speed * (1.0 - current_slow_factor)
-
-	if type == EnemyType.ARCHER:
-		var keep_dist = 12.0
-		if dist > keep_dist + 1.5:
-			velocity.x = dir.x * final_speed
-			velocity.z = dir.z * final_speed
-		elif dist < keep_dist - 1.5:
-			velocity.x = -dir.x * final_speed * 0.5
-			velocity.z = -dir.z * final_speed * 0.5
-		else:
-			velocity.x = 0; velocity.z = 0
-		if can_attack and dist <= 18.0: shoot_at_player()
-	else:
-		if dist <= attack_range:
-			velocity.x = 0; velocity.z = 0
-			attack_player()
-		else:
-			velocity.x = dir.x * final_speed
-			velocity.z = dir.z * final_speed
-
+	
 	if velocity.length() > 0.1:
-		var look_target = global_position + dir
-		if global_position.distance_to(look_target) > 0.1:
-			look_at(look_target, Vector3.UP)
+		var target = global_position + dir
+		if global_position.distance_to(target) > 0.1:
+			look_at(target, Vector3.UP)
 
-func apply_slow(amount: float, duration: float):
-	if is_elite: amount *= 0.5 
-	if amount > current_slow_factor:
-		current_slow_factor = amount
-	slow_timer.start(duration)
-
-func take_damage(dmg: float):
-	if current_hp <= 0 or is_dying: return
-	
-	var final_dmg = dmg
-	_show_damage_numbers(final_dmg, Color.WHITE)
-	current_hp -= final_dmg
-	
-	if AugmentManager.mechanic_levels.has("gold_3"):
-		var threshold = AugmentManager.player_stats.get("execution_threshold", 0.0)
-		if current_hp > 0 and current_hp <= max_hp * threshold:
-			_execute_enemy()
-			return
-
-	if current_hp <= 0: 
-		pre_die()
-
-func _show_damage_numbers(amount: float, color: Color = Color.WHITE):
-	if not has_node("Label3D"): return
-	var label = $Label3D.duplicate()
-	add_child(label)
-	label.show()
-	label.text = str(ceil(amount))
-	label.modulate = color
-	
-	var random_x = randf_range(-1.0, 1.0)
-	label.position = Vector3(random_x, 2.0, 0)
-	
-	var tw = create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(label, "position:y", 4.0, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(label, "position:x", random_x * 2.0, 0.5)
-	tw.tween_property(label, "modulate:a", 0.0, 0.5).set_delay(0.2)
-	tw.finished.connect(label.queue_free)
-
-func _execute_enemy():
-	if is_dying: return
-	is_dying = true
-	current_hp = 0
-	
-	if execution_mark: 
-		execution_mark.show()
-		var tw = create_tween()
-		tw.tween_property(execution_mark, "scale", Vector3.ONE * 2.0, 0.1)
-		tw.tween_property(execution_mark, "scale", Vector3.ONE, 0.2)
-	
-	_show_damage_numbers(666, Color.RED)
-	
-	# KRİTİK DEĞİŞİKLİK: await ve time_scale kaldırıldı.
-	# Böylece oyun akışı donmaz, sadece bu düşman ölür.
-	pre_die()
-
-func pre_die():
-	is_dying = true
-	collision_layer = 0
-	collision_mask = 0
-	logic_timer.stop()
-	
-	var tw = create_tween()
-	tw.tween_property(self, "scale", Vector3.ZERO, 0.3).set_ease(Tween.EASE_IN)
-	tw.finished.connect(die)
-
-func die():
-	var wm = get_tree().get_first_node_in_group("weapon_manager")
-	if wm and wm.has_method("on_enemy_killed"):
-		wm.on_enemy_killed(self)
-	
-	spawn_xp_reward()
-	queue_free()
-
-func spawn_xp_reward():
-	if xp_orb_scene:
-		var orb = xp_orb_scene.instantiate()
-		get_tree().root.add_child(orb)
-		orb.global_position = global_position + Vector3(0, 0.5, 0)
-		if "xp_value" in orb: orb.xp_value = xp_reward
-
-func setup_stats_by_stage():
-	max_hp = 25.0 * stage 
-	damage = 8.0 * stage 
-	xp_reward = 45 * stage 
-	if is_elite: 
-		max_hp *= 4.0
-		damage *= 1.5
-		xp_reward *= 5
-	current_hp = max_hp
-
-func update_visuals():
-	if not mesh: return
-	var mat := StandardMaterial3D.new()
-	if is_frozen:
-		mat.albedo_color = FROZEN_COLOR
-		mat.emission_enabled = true
-		mat.emission = FROZEN_COLOR * 2.0
+func _behavior_melee(dist, dir, _delta):
+	if dist > attack_range:
+		velocity.x = dir.x * speed
+		velocity.z = dir.z * speed
 	else:
-		var color :Color = STAGE_COLORS.get(stage, Color.WHITE)
-		mat.albedo_color = color
-		if is_elite: 
-			mat.emission_enabled = true
-			mat.emission = color * 2.0
-		if type == EnemyType.ARCHER: mesh.scale = Vector3(0.7, 1.3, 0.7)
-	mesh.material_override = mat
+		velocity.x = 0; velocity.z = 0
+		_attempt_attack()
 
-func make_elite():
-	is_elite = true
-	setup_stats_by_stage()
-	scale = Vector3(1.8, 1.8, 1.8)
-	movement_speed *= 0.8
-	update_visuals()
+func _behavior_archer(dist, dir, delta):
+	shoot_cooldown -= delta
+	if dist < 8.0:
+		velocity.x = -dir.x * speed * 0.8
+		velocity.z = -dir.z * speed * 0.8
+	elif dist > attack_range:
+		velocity.x = dir.x * speed
+		velocity.z = dir.z * speed
+	else:
+		velocity.x = 0; velocity.z = 0
+		
+	if dist <= attack_range and shoot_cooldown <= 0:
+		_shoot_projectile()
 
-func make_archer():
-	type = EnemyType.ARCHER
-	attack_range = 15.0
-	attack_cooldown = 2.0
-	movement_speed *= 1.1
-	update_visuals()
+func _attempt_attack():
+	if player.has_method("take_damage"):
+		player.take_damage(damage * get_physics_process_delta_time())
 
-func shoot_at_player():
-	if not can_attack or is_frozen or projectile_scene == null or player == null: return
-	can_attack = false
+func _shoot_projectile():
+	if not projectile_scene: return
+	shoot_cooldown = 2.0
 	var proj = projectile_scene.instantiate()
 	get_tree().root.add_child(proj)
 	proj.global_position = global_position + Vector3(0, 1.5, 0)
-	proj.direction = (player.global_position - proj.global_position).normalized()
 	proj.damage = damage
-	await get_tree().create_timer(attack_cooldown).timeout
-	can_attack = true
+	proj.process_mode = Node.PROCESS_MODE_PAUSABLE
+	var target_pos = player.global_position + Vector3(0, 1.0, 0)
+	proj.look_at(target_pos, Vector3.UP)
 
-func attack_player():
-	if not can_attack or is_frozen or player == null: return
-	can_attack = false
-	if player.has_method("take_damage"): player.take_damage(damage)
-	await get_tree().create_timer(attack_cooldown).timeout
-	can_attack = true
+# --- HASAR ---
 
-func apply_freeze(duration: float):
+func take_damage(amount):
+	if is_dying: return
+	current_hp -= amount
+	_spawn_damage_text(amount)
+	
+	if current_hp <= 0:
+		die()
+
+func die():
+	# XP Yarat (Buradaki hata çözüldü)
+	if xp_orb_scene:
+		var xp = xp_orb_scene.instantiate()
+		get_tree().root.add_child(xp)
+		xp.global_position = global_position
+		# Orb'un içindeki değişkene (xp_value), bizim değişkeni (xp_reward) ata
+		if "xp_value" in xp: xp.xp_value = xp_reward 
+	
+	cleanup()
+	var spawner = get_tree().get_first_node_in_group("enemy_spawner")
+	if spawner and spawner.has_method("_return_to_pool"):
+		spawner._return_to_pool(self)
+	else:
+		queue_free()
+
+func _spawn_damage_text(amount):
+	if not has_node("Label3D"): return
+	var lbl = $Label3D.duplicate()
+	get_tree().root.add_child(lbl)
+	lbl.global_position = global_position + Vector3(0, 2.5, 0)
+	lbl.text = str(int(amount))
+	lbl.show()
+	active_labels.append(lbl)
+	
+	var tw = create_tween()
+	tw.tween_property(lbl, "global_position:y", lbl.global_position.y + 1.5, 0.5)
+	tw.tween_callback(func(): 
+		if is_instance_valid(lbl): lbl.queue_free()
+		active_labels.erase(lbl)
+	)
+
+func _update_visuals():
+	if not mesh: return
+	var mat = StandardMaterial3D.new()
+	if is_frozen:
+		mat.albedo_color = FROZEN_COLOR
+		mat.emission_enabled = true
+		mat.emission = FROZEN_COLOR
+	elif is_elite:
+		mat.albedo_color = COLOR_ELITE
+		mat.emission_enabled = true
+		mat.emission = COLOR_ELITE * GLOW_INTENSITY
+	else:
+		match my_type:
+			Type.FODDER: mat.albedo_color = COLOR_FODDER
+			Type.TANK: mat.albedo_color = COLOR_TANK
+			Type.ARCHER: mat.albedo_color = COLOR_ARCHER
+	mesh.material_override = mat
+
+func apply_freeze(duration):
 	if is_elite: return
 	is_frozen = true
-	update_visuals()
+	_update_visuals()
 	await get_tree().create_timer(duration).timeout
 	if is_instance_valid(self):
 		is_frozen = false
-		update_visuals()
+		_update_visuals()

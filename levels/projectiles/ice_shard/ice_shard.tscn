@@ -12,6 +12,7 @@ albedo_color = Color(0.27450982, 0.5411765, 1, 1)
 
 [node name="IceShard" type="Area3D" unique_id=300626182]
 transform = Transform3D(-0.999438, 0, -0.03352148, 0, 1, 0, 0.03352148, 0, -0.999438, 0, 0, 0)
+collision_mask = 3
 script = ExtResource("1_64tra")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1749456705]

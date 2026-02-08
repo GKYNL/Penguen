@@ -10,6 +10,7 @@
 
 [node name="Snowball" type="Area3D" unique_id=1463776986]
 disable_mode = 2
+collision_mask = 3
 script = ExtResource("1_m5fss")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=929183645]

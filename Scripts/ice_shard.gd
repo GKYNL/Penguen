@@ -7,7 +7,15 @@ var hit_count: int = 0
 var is_exploding: bool = false
 
 func _ready():
-	get_tree().create_timer(2.0).timeout.connect(queue_free)
+	# ESKİ KOD (SİLİNDİ): get_tree().create_timer(2.0).timeout.connect(queue_free)
+	
+	# YENİ KOD: Timer Node Kullanımı
+	var timer = Timer.new()
+	timer.wait_time = 2.0
+	timer.one_shot = true
+	timer.autostart = true
+	timer.timeout.connect(queue_free)
+	add_child(timer)
 
 func _physics_process(delta):
 	if is_exploding: return
@@ -20,7 +28,6 @@ func _on_body_entered(body):
 	if enemy and enemy.has_method("take_damage"):
 		enemy.take_damage(damage * AugmentManager.player_stats["damage_mult"])
 		hit_count += 1
-		# Eğer delme sınırı dolduysa patla
 		if hit_count >= pierce:
 			explode()
 	elif not body.is_in_group("player"):
@@ -32,5 +39,4 @@ func _find_enemy(node):
 
 func explode():
 	is_exploding = true
-	# VFX buraya eklenebilir
 	queue_free()

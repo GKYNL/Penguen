@@ -1,184 +1,147 @@
 extends Node3D
 
-@export_group("Wave Settings")
-@export var enemy_scene: PackedScene
-@export var base_spawn_interval: float = 2.0
-@export var min_spawn_interval: float = 0.05 # Makinalı tüfek gibi spawn
+@export_group("Setup")
+@export var enemy_scene: PackedScene # BURAYA enemy.tscn ATANMALI!
 @export var spawn_radius: float = 28.0
+@export var despawn_radius: float = 55.0
 @export var is_active: bool = false
 
-@export_group("Difficulty")
-@export var max_enemy_cap: int = 500 
-@export var difficulty_scaling: float = 1.2
+# --- DALGA SENARYOSU ---
+var waves = [
+	# 0-30.sn: Sadece zayıf, hızlı (Isınma)
+	{"time": 0, "type": 0, "interval": 0.5, "amount": 1, "elite_chance": 0.0, "hp_mod": 1.0, "spd_mod": 1.2},
+	# 30-60.sn: Tanklar karışır
+	{"time": 30, "type": 1, "interval": 1.5, "amount": 2, "elite_chance": 0.0, "hp_mod": 2.0, "spd_mod": 0.7},
+	# 60-120.sn: Okçular ve Karışık
+	{"time": 60, "type": 2, "interval": 2.0, "amount": 3, "elite_chance": 0.05, "hp_mod": 1.5, "spd_mod": 1.0},
+	# 2. Dakika: Kaos
+	{"time": 120, "type": 0, "interval": 0.2, "amount": 4, "elite_chance": 0.1, "hp_mod": 3.0, "spd_mod": 1.3}
+]
 
-var player = null
-var current_stage: int = 1
-var director_anger: float = 1.0 # AI sinir katsayısı
-var active_enemy_count: int = 0
+var current_wave_index: int = 0
+var game_time: float = 0.0
+var time_until_next_spawn: float = 0.0
+var map_ready: bool = false # HATA 1 FIX: Harita kontrolü
 
-@onready var spawn_timer: Timer = Timer.new()
-@onready var brain_timer: Timer = Timer.new() # Yapay zeka döngüsü
+var enemy_pool: Array[Node3D] = []
+var active_enemies: Array[Node3D] = []
+var player: Node3D = null
 
 func _ready():
+	add_to_group("enemy_spawner")
 	player = get_tree().get_first_node_in_group("player")
 	
-	# Timer Kurulumları
-	add_child(spawn_timer)
-	spawn_timer.timeout.connect(_on_spawn_tick)
+	# HATA 1 FIX: Haritanın yüklenmesini bekle (2 fizik karesi)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	map_ready = true
 	
-	add_child(brain_timer)
-	brain_timer.wait_time = 0.5 # Yarım saniyede bir analiz
-	brain_timer.timeout.connect(_ai_director_think)
-	
-	# KRİTİK DÜZELTME: Sinyali tek bir yönetici fonksiyona bağlıyoruz
-	if not AugmentManager.is_connected("mechanic_unlocked", _on_mechanic_unlocked_wrapper):
-		AugmentManager.mechanic_unlocked.connect(_on_mechanic_unlocked_wrapper)
+	# Başlangıç ayarı
+	if not AugmentManager.is_connected("mechanic_unlocked", _on_mechanic_unlocked):
+		AugmentManager.mechanic_unlocked.connect(_on_mechanic_unlocked)
 
-# Bu fonksiyon hem oyunu başlatır hem de gücü günceller
-func _on_mechanic_unlocked_wrapper(id):
-	# 1. Eğer oyun aktif değilse BAŞLAT (Kontağı çevir)
-	if not is_active:
-		_start_horde(id)
-	
-	# 2. Yeni kart alındığı için gücü hemen hesapla
-	_ai_director_think()
+func _on_mechanic_unlocked(_id):
+	if not is_active: 
+		is_active = true
+		print("⚔️ HORDE STARTED")
 
-func _start_horde(_id):
-	if is_active: return
-	is_active = true
-	spawn_timer.start(base_spawn_interval)
-	brain_timer.start()
-	_spawn_formation("circle", 8) # Isınma turu
+func _process(delta):
+	# Harita hazır değilse, oyun durduysa veya player öldüyse çalışma
+	if not map_ready or get_tree().paused or not is_instance_valid(player): return
+	if not is_active: return
+	
+	# Time Stop kontrolü
+	if "is_time_stopped" in player and player.is_time_stopped: return
 
-# --- YAPAY ZEKA YÖNETMENİ (AI DIRECTOR) ---
-func _ai_director_think():
-	if not is_active or not player: return
+	game_time += delta
+	_check_wave_update()
 	
-	# A. SAHAYI OKU
-	active_enemy_count = get_tree().get_nodes_in_group("Enemies").size()
-	var current_player_dps = _calculate_real_time_dps()
+	time_until_next_spawn -= delta
+	if time_until_next_spawn <= 0.0:
+		_spawn_wave_batch()
+		# Sonraki spawn süresini belirle
+		time_until_next_spawn = waves[current_wave_index]["interval"]
 	
-	# B. İDEAL DÜŞMAN SAYISI HESABI
-	# Senin gücün arttıkça oyunun "normal" kabul ettiği düşman sayısı artar.
-	# Örn: DPS 100 ise 20 düşman, DPS 1000 ise 200 düşman normaldir.
-	var ideal_enemy_count = clamp(int(current_player_dps / 40.0), 15, max_enemy_cap)
-	
-	# C. KARAR MEKANİZMASI
-	
-	# Durum 1: "Bu adam çok rahat" (Ekranda az düşman var)
-	if active_enemy_count < (ideal_enemy_count * 0.4): # %40'ın altındaysa
-		director_anger += 0.5 # Sinirlen
-		var missing_count = ideal_enemy_count - active_enemy_count
-		_force_emergency_wave(missing_count) # ACİL DURUM DALGASI!
-		
-	# Durum 2: "Harita doldu" (Sınıra dayandı)
-	elif active_enemy_count > (max_enemy_cap * 0.9):
-		director_anger = max(1.0, director_anger - 0.2) # Sakinleş
-	
-	# D. ZORLUK VE HIZ AYARI
-	# Director sinirliyse stage (can/hasar) artar ve spawn hızlanır
-	var speed_mult = clamp(director_anger / 10.0, 0.0, 0.9)
-	spawn_timer.wait_time = lerp(base_spawn_interval, min_spawn_interval, speed_mult)
-	
-	# Stage artık senin gücüne ve AI'ın sinirine bağlı
-	current_stage = int(current_player_dps / 200.0) + int(director_anger)
-	if current_stage < 1: current_stage = 1
+	# Temizlik (30 frame'de bir)
+	if Engine.get_frames_drawn() % 30 == 0:
+		_cleanup_distant_enemies()
 
-# --- DETAYLI GÜÇ ANALİZİ ---
-func _calculate_real_time_dps() -> float:
-	var stats = AugmentManager.player_stats
-	var dps = 20.0 # Taban güç
-	
-	if AugmentManager.active_weapon_id != "":
-		var w_id = AugmentManager.active_weapon_id
-		var lv = AugmentManager.mechanic_levels.get(w_id, 1)
-		var w_data = _find_augment_data(w_id, lv)
-		if w_data:
-			var d = float(w_data.get("damage", 10))
-			var fr = float(w_data.get("fire_rate", 1.0))
-			var c = float(w_data.get("count", 1))
-			var p = float(w_data.get("pierce", 1)) + 1.0 
-			dps += (d * fr * c * p) * 2.0
-	
-	# Çarpanlar
-	dps *= stats.get("damage_mult", 1.0)
-	dps *= stats.get("attack_speed", 1.0)
-	
-	# Kritik ve Cooldown çok büyük güçtür
-	var crit_val = 1.0 + (stats.get("crit_chance", 0.0) * (stats.get("crit_damage", 1.5) - 1.0))
-	var cdr_val = 1.0 / (1.0 - min(0.9, stats.get("cooldown_reduction", 0.0)))
-	
-	return dps * crit_val * cdr_val
+func _check_wave_update():
+	if current_wave_index < waves.size() - 1:
+		if game_time >= waves[current_wave_index + 1]["time"]:
+			current_wave_index += 1
+			print("🌊 WAVE LEVEL UP: ", current_wave_index)
 
-# --- SPAWN İŞLEMLERİ ---
-func _on_spawn_tick():
-	if not is_active or active_enemy_count >= max_enemy_cap: return
-	
-	# Director ne kadar sinirliyse o kadar kalabalık gruplar gelir
-	var batch_size = int(max(1.0, director_anger * 2.0))
-	
-	if randf() < 0.3: # %30 ihtimalle formasyon
-		var formations = ["circle", "line", "cluster"]
-		_spawn_formation(formations.pick_random(), batch_size)
-	else:
-		_spawn_batch(batch_size)
-
-func _force_emergency_wave(count: int):
-	# Anında haritayı doldurmak için çağrılır
-	var wave_size = min(count, 40) # Tek seferde oyunu dondurmasın diye limit
-	_spawn_formation("circle", wave_size)
-	if OS.is_debug_build(): print("🚨 EMERGENCY WAVE: ", wave_size, " Enemies!")
-
-func _spawn_batch(amount: int):
-	for i in range(amount):
-		var angle = randf() * TAU
-		var dist = spawn_radius + randf_range(-4.0, 4.0)
-		var pos = player.global_position + Vector3(cos(angle), 0, sin(angle)) * dist
-		_instantiate_enemy(pos)
-
-func _spawn_formation(type: String, count: int):
-	var center_angle = randf() * TAU
-	var center_pos = player.global_position + Vector3(cos(center_angle), 0, sin(center_angle)) * spawn_radius
+func _spawn_wave_batch():
+	var data = waves[current_wave_index]
+	var count = data["amount"]
 	
 	for i in range(count):
-		var spawn_pos = Vector3.ZERO
-		match type:
-			"circle": 
-				var angle = (TAU / count) * i
-				spawn_pos = player.global_position + Vector3(cos(angle), 0, sin(angle)) * (spawn_radius * 0.9)
-			"line":
-				var dir = center_pos.direction_to(player.global_position).rotated(Vector3.UP, PI/2)
-				spawn_pos = center_pos + (dir * i * 2.0)
-			"cluster":
-				spawn_pos = center_pos + Vector3(randf_range(-5,5), 0, randf_range(-5,5))
-		
-		_instantiate_enemy(spawn_pos)
+		_spawn_single_enemy(data)
 
-func _instantiate_enemy(pos: Vector3):
-	var enemy = enemy_scene.instantiate()
-	get_tree().root.add_child(enemy)
-	enemy.global_position = pos
-	
-	# Dinamik Güçlendirme (Enemy scriptinde bu değişkenler olmalı)
-	enemy.stage = current_stage 
-	
-	# AI çok sinirliyse düşmanları güçlendir
-	if director_anger > 4.0:
-		enemy.set("speed_multiplier", 1.4) 
-		enemy.set("hp_multiplier", 1.5)
-	
-	# Elit Şansı
-	if randf() < (0.05 * director_anger):
-		enemy.make_elite()
-	elif randf() < (0.1 * director_anger):
-		enemy.make_archer()
+func _spawn_single_enemy(data):
+	# HATA 2 FIX: Sahne atanmamışsa oyunu çökertme, hata bas ve çık
+	if not enemy_scene:
+		push_error("HATA: Enemy Spawner'da 'Enemy Scene' boş! Inspector'dan atama yap!")
+		is_active = false # Spam yapmasın diye durdur
+		return
 
-# --- YARDIMCI ---
-func _find_augment_data(id: String, level: int):
-	for pool in [AugmentManager.tier_1_pool, AugmentManager.tier_2_pool, AugmentManager.tier_3_pool]:
-		if pool.has("augments"):
-			for aug in pool["augments"]:
-				if aug.id == id:
-					var levels = aug.get("levels", [])
-					return levels[clamp(level - 1, 0, levels.size() - 1)]
-	return null
+	# 1. Pozisyon
+	var spawn_pos = _get_safe_spawn_pos()
+	if spawn_pos == Vector3.ZERO: return
+
+	# 2. Havuzdan Çek
+	var enemy = _get_enemy_from_pool()
+	if not enemy: return # Havuz/Instantiate hatası varsa çık
+	
+	if not enemy.is_inside_tree(): get_tree().root.add_child(enemy)
+	enemy.global_position = spawn_pos
+	
+	if not enemy in active_enemies: active_enemies.append(enemy)
+	
+	# 3. Özellikleri Ayarla
+	var is_elite = randf() < data["elite_chance"]
+	if is_elite:
+		enemy.setup_elite(data["hp_mod"], data["spd_mod"])
+	else:
+		enemy.setup_standard(data["type"], data["hp_mod"], data["spd_mod"])
+	
+	if enemy.has_method("reset_physics"): enemy.reset_physics()
+
+# --- YARDIMCILAR ---
+func _get_safe_spawn_pos() -> Vector3:
+	var angle = randf() * TAU
+	var dist = spawn_radius + randf_range(-2.0, 2.0)
+	var raw_pos = player.global_position + Vector3(cos(angle), 0, sin(angle)) * dist
+	
+	var map = get_world_3d().navigation_map
+	var safe_pos = NavigationServer3D.map_get_closest_point(map, raw_pos)
+	
+	# Oyuncuya çok yakınsa veya (0,0,0) hatasıysa reddet
+	if safe_pos.distance_to(player.global_position) < 10.0: return Vector3.ZERO
+	return safe_pos
+
+func _cleanup_distant_enemies():
+	var p_pos = player.global_position
+	for i in range(active_enemies.size() - 1, -1, -1):
+		var enemy = active_enemies[i]
+		if is_instance_valid(enemy) and enemy.global_position.distance_to(p_pos) > despawn_radius:
+			_return_to_pool(enemy)
+			active_enemies.remove_at(i)
+
+func _get_enemy_from_pool() -> Node3D:
+	if enemy_pool.is_empty(): 
+		if enemy_scene: return enemy_scene.instantiate()
+		else: return null
+	
+	var e = enemy_pool.pop_back()
+	e.process_mode = Node.PROCESS_MODE_PAUSABLE
+	e.visible = true
+	return e
+
+func _return_to_pool(enemy: Node3D):
+	if enemy.has_method("cleanup"): enemy.cleanup()
+	enemy.process_mode = Node.PROCESS_MODE_DISABLED
+	enemy.visible = false
+	enemy.global_position = Vector3(0, -500, 0)
+	enemy_pool.append(enemy)

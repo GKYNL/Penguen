@@ -13,6 +13,9 @@ var active_weapon_id = ""
 var max_gold_slots: int = 5
 var max_prism_slots: int = 2
 
+# YENİ: Kart seçimi sırasında Player'ı dondurmak için bayrak
+var is_selection_active: bool = false
+
 # OYUNCU STATLARI
 var player_stats = {
 	"max_hp": 100.0,
@@ -33,8 +36,6 @@ var player_stats = {
 	"waves": 1,
 	"dash_charges": 1,
 	"thorns": 0.0,
-	
-	# Prism Mechanics
 	"stomp_damage": 0.0,
 	"winter_damage": 0.0,
 	"winter_radius": 0.0,
@@ -59,8 +60,8 @@ func initialize_game_start():
 	print("AugmentManager: Oyun baslatiliyor...")
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
-	# TEST: Prism 6 (Time Stop) burada acilabilir
-	_force_unlock_augment("prism_6", 4) 
+	#await get_tree().create_timer(3).timeout
+	#_force_unlock_augment("prism_6", 4) 
 
 func _setup_initial_mechanics():
 	current_level = 1
@@ -68,6 +69,7 @@ func _setup_initial_mechanics():
 	active_gold_ids = []
 	active_prism_ids = []
 	mechanic_levels = {}
+	is_selection_active = false
 	
 	player_stats = {
 		"max_hp": 100.0, "speed": 12.5, "damage_mult": 1.0, "attack_speed": 1.0,
@@ -103,8 +105,6 @@ func _force_unlock_augment(aug_id: String, level: int = 1):
 		print("Force Unlock: ", aug_id, " Lv.", level)
 		_update_special_mechanic_stats(found_card, level)
 		emit_signal.call_deferred("mechanic_unlocked", aug_id)
-	else:
-		push_error("Force Unlock basarisiz! Kart bulunamadi: " + aug_id)
 
 func load_augment_data():
 	var file_path = "res://Data/augments.json"
@@ -116,16 +116,13 @@ func load_augment_data():
 			tier_2_pool = data.get("tier_2_pool", [])
 			tier_3_pool = data.get("tier_3_pool", [])
 			print("JSON Verisi Yuklendi.")
-		else:
-			push_error("JSON Parse Hatasi!")
-	else:
-		push_error("augments.json bulunamadi!")
 
 func apply_augment(card_data):
 	var a_id = card_data.get("id", "")
 	var a_name = card_data.get("name", "Gelistirme")
 	var a_desc = card_data.get("desc", "")
 	var type = card_data.get("type", "stat")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	emit_signal("augment_selected", a_name, a_desc)
 
@@ -155,22 +152,25 @@ func apply_augment(card_data):
 		if player_stats.has(s_name):
 			var val = card_data.get("val", 0.0)
 			if s_name == "multishot_chance" and val > 1.0: val = val / 100.0
-			
 			player_stats[s_name] += val
 			
 			if s_name == "max_hp":
-				var player = get_tree().get_first_node_in_group("player")
-				if player and player.has_method("heal"):
-					player.heal(val)
-			
-	get_tree().paused = false
+				if player and player.has_method("heal"): player.heal(val)
+	
+	# --- KART SEÇİMİ BİTTİ ---
+	is_selection_active = false
+	
+	# KRİTİK KONTROL:
+	# Eğer Player şu an "Time Stop" (Zaman Durdurma) modundaysa, oyunu UNPAUSE YAPMA!
+	# Time Stop devam etmeli. Sadece Player'ın hareket kilidini (is_selection_active) kaldırdık.
+	if player and player.get("is_time_stopped") == true:
+		print("Kart secildi ama Time Stop aktif. Oyun PAUSE kalmaya devam ediyor.")
+	else:
+		get_tree().paused = false
 
-# --- ANA STAT GUNCELLEME MERKEZI ---
 func _update_special_mechanic_stats(card_data, level):
 	var a_id = card_data.get("id", "")
 	if not card_data.has("levels"): return
-	
-	print("[AUGMENT] Guncelleniyor: ", a_id, " Hedef Level: ", level)
 	
 	var player = get_tree().get_first_node_in_group("player")
 	
@@ -178,20 +178,16 @@ func _update_special_mechanic_stats(card_data, level):
 		"gold_3": 
 			var lv_data = card_data["levels"][level-1]
 			player_stats["execution_threshold"] = lv_data.get("threshold", 0.1)
-			
 		"prism_2": 
 			var lv_data = card_data["levels"][level-1]
 			player_stats["cooldown_reduction"] = lv_data.get("val", 0.0)
 			if player and player.has_method("update_prism_visuals"):
 				player.update_prism_visuals("prism_2", level)
-				
 		"prism_3": # TITAN FORM
-			print("[AUGMENT] Titan Form (Kumulatif) Hesaplaniyor...")
 			var total_hp_bonus = 0.0
 			var total_armor = 0.0
 			var total_dmg_mult = 0.0
 			var current_stomp = 0.0
-			
 			for i in range(level):
 				var d = card_data["levels"][i]
 				if d.has("hp_bonus"): total_hp_bonus += float(d["hp_bonus"])
@@ -204,63 +200,46 @@ func _update_special_mechanic_stats(card_data, level):
 			player_stats["damage_mult"] = 1.0 + total_dmg_mult
 			player_stats["stomp_damage"] = current_stomp
 			
-			print("   SONUC -> MaxHP: %s (+%s), Armor: %s, Stomp: %s" % [
-				player_stats["max_hp"], total_hp_bonus, total_armor, current_stomp
-			])
-
 		"prism_5": # ETERNAL WINTER
-			print("[AUGMENT] Eternal Winter Hesaplaniyor...")
 			var total_dmg = 0.0
 			var max_radius = 8.0
 			var total_slow = 0.0
-			
 			for i in range(level):
 				var d = card_data["levels"][i]
 				if d.has("damage"): total_dmg += float(d["damage"])
 				if d.has("radius"): max_radius = float(d["radius"])
 				if d.has("freeze"): total_slow = float(d["freeze"])
-			
 			player_stats["winter_damage"] = total_dmg
 			player_stats["winter_radius"] = max_radius
 			player_stats["winter_slow"] = total_slow
 			
-			print("   Winter Stats -> Dmg: %s, Rad: %s, Slow: %s" % [total_dmg, max_radius, total_slow])
-			
 		"prism_6": # TIME STOP
-			print("[AUGMENT] Time Stop Guncelleniyor...")
 			var dur = 0.0
 			var cd_mult = 1.0
 			var d = card_data["levels"][level-1]
-			
 			if d.has("duration"): dur = float(d["duration"])
 			if d.has("cd"): cd_mult = float(d["cd"])
-			
 			player_stats["time_stop_duration"] = dur
 			player_stats["time_stop_cooldown_mult"] = cd_mult
-			
-			print("   Time Stop -> Sure: %s sn, CD Carpani: %s" % [dur, cd_mult])
 
-	# PLAYER GUNCELLEME
 	if player and player.has_method("sync_stats_from_manager"):
-		print("[AUGMENT] Player Senkronize Ediliyor...")
 		player.sync_stats_from_manager()
 
 func _prepare_card(card):
 	var prepared = card.duplicate(true)
 	var cur_lvl = mechanic_levels.get(prepared.id, 0)
-	
 	if prepared.has("levels") and prepared["levels"] is Array:
 		var levels_array = prepared["levels"]
 		if cur_lvl < levels_array.size():
 			var next_level_data = levels_array[cur_lvl]
-			if next_level_data.has("desc"):
-				prepared["desc"] = next_level_data["desc"]
+			if next_level_data.has("desc"): prepared["desc"] = next_level_data["desc"]
 			prepared["name"] = prepared["name"] + " Lv." + str(cur_lvl + 1)
 		else:
 			prepared["desc"] = "MAX LEVEL"
 			prepared["name"] = prepared["name"] + " (MAX)"
 	return prepared
 
+# ... (Kalan standart fonksiyonlar aynen duruyor) ...
 func can_unlock_mechanic(id: String) -> bool:
 	if mechanic_levels.has(id): return true
 	var rarity = _get_rarity_from_json(id)
@@ -281,11 +260,13 @@ func _get_rarity_from_json(target_id: String) -> String:
 func _get_active_mechanic_count(target_rarity: String) -> int:
 	var count = 0
 	for m_id in mechanic_levels.keys():
-		if _get_rarity_from_json(m_id) == target_rarity:
-			count += 1
+		if _get_rarity_from_json(m_id) == target_rarity: count += 1
 	return count
 
 func start_game_selection():
+	# UI AÇILDI: Player'ı ve her şeyi dondur
+	is_selection_active = true
+	
 	current_level = 1; current_xp = 0
 	emit_signal("level_changed", current_level)
 	var choices = generate_choices()
@@ -298,13 +279,36 @@ func add_xp(amount):
 	emit_signal("xp_changed", current_xp, max_xp)
 
 func level_up():
+	# UI ACILDI: Player'i ve her seyi dondur
+	is_selection_active = true
+	
 	current_level += 1
 	current_xp -= max_xp
-	if current_level < 5: max_xp = 80 + (current_level * 40)
-	elif current_level < 20: max_xp = 300 + ((current_level - 5) * 100)
-	else: max_xp = 1800 + ((current_level - 20) * 250) + int(pow(current_level - 20, 1.5) * 10)
+	
+	# --- AKILLI XP HESAPLAMA MEKANIZMASI ---
+	# Temel mantik: max_xp = Taban_XP * (Katsayi ^ level) + (Ekstra_Ivme)
+	
+	if current_level < 10:
+		# Ilk 10 seviye: Hizli baslangic, tatmin edici ilerleme
+		max_xp = 100 + (current_level * 50)
+	elif current_level < 25:
+		# Orta safha: %15 lineer artis + %5 exponential artis
+		max_xp = int(max_xp * 1.15) + (current_level * 20)
+	elif current_level < 50:
+		# Gec safha: Artik guclendin, her level icin ciddi efor lazim
+		max_xp = int(max_xp * 1.25) + int(pow(current_level, 1.8))
+	else:
+		# Endgame (50+): Seviye atlamak artik bir basari
+		max_xp = int(max_xp * 1.35) + int(pow(current_level, 2.2))
+	
+	# Sinirlayici: XP ihtiyacinin bellegi zorlayacak kadar sacma rakamlara cikmasini engelle (Opsiyonel)
+	max_xp = clamp(max_xp, 100, 500000)
+	
+	print("[SYSTEM] Level Up! Yeni Level: %d, Gereken XP: %d" % [current_level, max_xp])
+	
 	emit_signal("level_changed", current_level)
 	emit_signal("xp_changed", current_xp, max_xp)
+	
 	var choices = generate_choices()
 	emit_signal("show_augment_selection", choices)
 	get_tree().paused = true
