@@ -33,10 +33,12 @@ size = Vector3(1, 38.49121, 1)
 
 [node name="laser" type="MeshInstance3D" unique_id=374758078]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0)
+layers = 3
 mesh = SubResource("CylinderMesh_ukons")
 script = ExtResource("2_r260l")
 
 [node name="Area3D" type="Area3D" parent="." unique_id=1283206352]
+collision_mask = 3
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" unique_id=1308400035]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8808594, 0)

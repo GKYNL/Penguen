@@ -26,25 +26,28 @@ func _ready():
 
 func _create_to_pool():
 	var e = enemy_scene.instantiate()
-	# Önce sahneye ekle
-	add_child(e)
 	
-	# Ayarları yap
+	# 1. AYARLAR (Sahneye girmeden önce yap ki Jolt hata vermesin)
 	e.visible = false
 	e.process_mode = Node.PROCESS_MODE_DISABLED
+	# Ölçek sıfır olmasın (Jolt Fix)
+	e.scale = Vector3(0.1, 0.1, 0.1) 
 	
-	# HATA FIX: is_inside_tree hatası için global_position yerine position kullanıyoruz
-	# Ve objenin ağaca girmesi için bir kare beklemeye gerek kalmadan yerel koordinat veriyoruz
-	e.position = Vector3(0, -50.0, 0)
-	
+	# 2. SİNYAL BAĞLANTISI
 	if e.has_signal("returned_to_pool"):
 		e.returned_to_pool.connect(_on_enemy_returned)
+	
+	# 3. SAHNEYE EKLE (Spawner'ın içine değil, ana sahneye!)
+	# Bu, düşmanın senin inputlarından etkilenmesini engeller.
+	get_tree().root.call_deferred("add_child", e)
+	
+	# 4. KONUM (Işınlama)
+	# Deferred olduğu için bir kare bekleyip yerin altına gönderiyoruz
+	e.set_deferred("position", Vector3(0, -50, 0))
 	
 	enemy_pool.append(e)
 
 func _on_enemy_returned(enemy):
-	# Düşman havuza döndüğünde de position kullanmak daha güvenlidir
-	enemy.position = Vector3(0, -50.0, 0)
 	enemy_pool.append(enemy)
 
 func _on_start_game(_id):

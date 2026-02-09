@@ -61,7 +61,7 @@ func initialize_game_start():
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
 	#await get_tree().create_timer(3).timeout
-	#_force_unlock_augment("prism_6", 4) 
+	_force_unlock_augment("prism_4", 4) 
 
 func _setup_initial_mechanics():
 	current_level = 1
@@ -151,22 +151,20 @@ func apply_augment(card_data):
 		var s_name = card_data.get("stat", "")
 		if player_stats.has(s_name):
 			var val = card_data.get("val", 0.0)
-			if s_name == "multishot_chance" and val > 1.0: val = val / 100.0
 			player_stats[s_name] += val
 			
+			# FIX: Sadece max_hp artışında can ekle, her seçimde değil!
 			if s_name == "max_hp":
-				if player and player.has_method("heal"): player.heal(val)
+				if player and player.has_method("heal"): 
+					player.heal(val) # Sadece eklenen miktar kadar iyileştir
 	
-	# --- KART SEÇİMİ BİTTİ ---
 	is_selection_active = false
 	
-	# KRİTİK KONTROL:
-	# Eğer Player şu an "Time Stop" (Zaman Durdurma) modundaysa, oyunu UNPAUSE YAPMA!
-	# Time Stop devam etmeli. Sadece Player'ın hareket kilidini (is_selection_active) kaldırdık.
 	if player and player.get("is_time_stopped") == true:
-		print("Kart secildi ama Time Stop aktif. Oyun PAUSE kalmaya devam ediyor.")
+		print("Time Stop aktif. Oyun PAUSE kalmaya devam ediyor.")
 	else:
 		get_tree().paused = false
+
 
 func _update_special_mechanic_stats(card_data, level):
 	var a_id = card_data.get("id", "")

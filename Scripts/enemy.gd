@@ -74,55 +74,39 @@ func _physics_process(delta):
 	move_and_slide()
 
 func _on_logic_tick():
-	# 1. GÜVENLİK KONTROLLERİ
-	if is_dying or is_frozen or !is_instance_valid(player): 
-		velocity = Vector3.ZERO
-		return
-	
-	# 2. HEDEF HESAPLAMA (Input ASLA kullanılmaz)
+	if is_dying or is_frozen or !is_instance_valid(player): return
 	var diff = player.global_position - global_position
-	diff.y = 0 # Yüksekliği yok say
+	diff.y = 0
 	var dist = diff.length()
 	var dir = diff.normalized()
 
-	# 3. HIZ VE DURUM
 	var final_speed = movement_speed * (1.0 - current_slow_factor)
 	final_speed = max(0.5, final_speed)
 
-	# 4. DAVRANIŞ (Sadece Mesafeye Göre)
 	if type == EnemyType.ARCHER:
-		_process_archer_logic(dist, dir, final_speed)
+		var keep_dist = 12.0
+		if dist > keep_dist + 1.5:
+			velocity.x = dir.x * final_speed
+			velocity.z = dir.z * final_speed
+		elif dist < keep_dist - 1.5:
+			velocity.x = -dir.x * final_speed * 0.5
+			velocity.z = -dir.z * final_speed * 0.5
+		else:
+			velocity.x = 0; velocity.z = 0
+		if can_attack and dist <= 18.0: shoot_at_player()
 	else:
-		_process_melee_logic(dist, dir, final_speed)
+		if dist <= 2.2:
+			velocity.x = 0; velocity.z = 0
+			attack_player()
+		else:
+			velocity.x = dir.x * final_speed
+			velocity.z = dir.z * final_speed
 
-	# 5. YÖNELME
 	if velocity.length() > 0.1:
 		var look_target = global_position + dir
-		look_at(look_target, Vector3.UP)
+		if global_position.distance_to(look_target) > 0.1:
+			look_at(look_target, Vector3.UP)
 
-func _process_melee_logic(dist, dir, speed):
-	# Çevrelenmeyi önlemek için oyuncuya yapışma, 2.2 metrede dur ve vur
-	if dist <= 2.2: 
-		velocity = Vector3.ZERO
-		attack_player()
-	else:
-		# INPUT DEĞİL, SADECE OYUNCUYA DOĞRU VEKTÖR
-		velocity.x = dir.x * speed
-		velocity.z = dir.z * speed
-
-func _process_archer_logic(dist, dir, speed):
-	var keep_dist = 14.0
-	if dist > keep_dist + 1.5:
-		velocity.x = dir.x * speed
-		velocity.z = dir.z * speed
-	elif dist < keep_dist - 1.5:
-		# Oyuncudan kaçarken bile inputa bakmaz, ters vektör alır
-		velocity.x = -dir.x * speed * 0.5
-		velocity.z = -dir.z * speed * 0.5
-	else:
-		velocity = Vector3.ZERO
-		if can_attack: shoot_at_player()
-		
 # --- HASAR & ÖLÜM ---
 func take_damage(amount: float):
 	if is_dying: return
@@ -152,24 +136,39 @@ func die():
 	collision_mask = 0
 	logic_timer.stop()
 	
-	# WeaponManager Habercisi
+	# Hasar sayılarını temizle
+	for l in get_tree().get_nodes_in_group("damage_labels"):
+		if l.get_meta("belongs_to") == self:
+			l.queue_free()
+
+	# --- VAMPIRISM ---
+	if AugmentManager.mechanic_levels.has("gold_1"):
+		var p = get_tree().get_first_node_in_group("player")
+		if p and p.has_method("heal"):
+			p.heal(2.0)
+
 	var wm = get_tree().get_first_node_in_group("weapon_manager")
 	if wm and wm.has_method("on_enemy_killed"): wm.on_enemy_killed(self)
 	
-	# XP & Efekt
+	# XP Orb (Bunu da ileride pool yapabiliriz ama şimdilik kalsın)
 	if xp_orb_scene:
 		var orb = xp_orb_scene.instantiate()
 		get_tree().root.add_child(orb)
 		orb.global_position = global_position + Vector3(0, 0.5, 0)
 		if "xp_value" in orb: orb.xp_value = xp_reward
-	if explosion_vfx_scene and AugmentManager.mechanic_levels.has("prism_1"):
-		var vfx = explosion_vfx_scene.instantiate()
-		get_tree().root.add_child(vfx)
-		vfx.global_position = global_position
+		
+	# --- VFX POOL ENTEGRASYONU ---
+	# gold_4: Chain Reaction veya Patlama Augment'i
+	if AugmentManager.mechanic_levels.has("gold_4"):
+		# Manager üzerinden anahtar kelimeyle (explosion) çağırıyoruz
+		VFXPoolManager.spawn_vfx("explosion", global_position)
+		
+	# Eğer Thunderlord vb. başka efektlerin varsa buraya ekleyebilirsin:
+	# VFXPoolManager.spawn_vfx("thunder", global_position)
 
-	# KÜÇÜLTME VE HARİTA ALTINA IŞINLAMA
+	# Ölüm animasyonu ve yer altına gönderiş
 	var tw = create_tween()
-	tw.tween_property(self, "scale", Vector3.ZERO, 0.3).set_ease(Tween.EASE_IN)
+	tw.tween_property(self, "scale", Vector3(0.01, 0.01, 0.01), 0.3).set_ease(Tween.EASE_IN)
 	tw.finished.connect(_send_to_underworld)
 
 func _send_to_underworld():
@@ -184,12 +183,22 @@ func reset_for_spawn():
 	is_frozen = false
 	can_attack = true
 	current_slow_factor = 0.0
-	scale = Vector3.ONE
+	
+	# JOLT FIX: Tam sıfır yerine çok küçük bir değerden başla
+	scale = Vector3(0.01, 0.01, 0.01) 
+	
 	visible = true
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 	collision_layer = 2
 	collision_mask = 7
-	logic_timer.start()
+	
+	if logic_timer:
+		logic_timer.start()
+
+	# Giriş animasyonu: 0.01'den 1.0'a
+	var tw = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(self, "scale", Vector3.ONE, 0.4)
+	
 	update_visuals()
 
 # --- DİĞER FONKSİYONLAR (Görsel, Saldırı, Hasar Sayıları) ---
@@ -232,18 +241,21 @@ func shoot_at_player():
 func _show_damage_numbers(value, color):
 	var label = Label3D.new()
 	get_tree().root.add_child(label)
-	label.global_position = global_position + Vector3(0, 2.0, 0)
+	label.global_position = global_position + Vector3(0, 2.5, 0)
 	label.text = str(int(value))
 	label.modulate = color
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
 	label.pixel_size = 0.01
-	label.font_size = 64
-	var random_offset = Vector3(randf_range(-1,1), randf_range(1,2), randf_range(-1,1))
-	var tw = create_tween()
-	tw.set_parallel(true)
+	label.font_size = 80 # Biraz daha büyük
+	
+	var random_offset = Vector3(randf_range(-1.5,1.5), randf_range(2,3.5), randf_range(-1.5,1.5))
+	var tw = create_tween().set_parallel(true)
 	tw.tween_property(label, "global_position", label.global_position + random_offset, 0.6).set_ease(Tween.EASE_OUT)
 	label.scale = Vector3.ZERO
-	tw.tween_property(label, "scale", Vector3.ONE * 3.0, 0.3).set_trans(Tween.TRANS_BACK)
+	# Hasar sayısı "fırlayarak" gelsin
+	tw.tween_property(label, "scale", Vector3.ONE * 2.5, 0.3).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.3)
 	tw.chain().tween_callback(label.queue_free)
+	label.set_meta("belongs_to", self) # Bu yazı bu düşmana ait
+	label.add_to_group("damage_labels")

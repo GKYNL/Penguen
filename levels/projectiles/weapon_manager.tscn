@@ -2,10 +2,10 @@
 
 [ext_resource type="Script" uid="uid://q5bdyorebes1" path="res://Scripts/lightning.gd" id="1_hkrja"]
 [ext_resource type="Script" uid="uid://2spllao54fty" path="res://Scripts/weapon_manager.gd" id="1_rqliq"]
-[ext_resource type="PackedScene" uid="uid://0dypebitt7j" path="res://vfx/lightning.tscn" id="2_uaqt0"]
-[ext_resource type="PackedScene" uid="uid://dteap5vx2drnj" path="res://vfx/echoing_screams.tscn" id="3_c1ncr"]
+[ext_resource type="PackedScene" uid="uid://0dypebitt7j" path="res://Scenes/VFX/lightning.tscn" id="2_uaqt0"]
+[ext_resource type="PackedScene" uid="uid://dteap5vx2drnj" path="res://Scenes/VFX/echoing_screams.tscn" id="3_c1ncr"]
 [ext_resource type="PackedScene" uid="uid://cwvp4jykve2cv" path="res://levels/projectiles/shooting_component.tscn" id="4_07dti"]
-[ext_resource type="PackedScene" uid="uid://c66eve0871x3x" path="res://vfx/vfx_explosion.tscn" id="4_14jl6"]
+[ext_resource type="PackedScene" uid="uid://c66eve0871x3x" path="res://Scenes/VFX/vfx_explosion.tscn" id="4_14jl6"]
 [ext_resource type="PackedScene" uid="uid://blxeq67dlsjjr" path="res://levels/projectiles/snowball/snowball.tscn" id="5_xrdhb"]
 [ext_resource type="PackedScene" uid="uid://g7v5aueny2ml" path="res://levels/projectiles/ice_shard/ice_shard.tscn" id="6_c1ncr"]
 [ext_resource type="Script" uid="uid://0yygslx8ova3" path="res://Scripts/ice_wave.gd" id="7_xrdhb"]

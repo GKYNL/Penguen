@@ -45,54 +45,49 @@ func _physics_process(delta: float):
 	_handle_gravity_and_damage(delta)
 
 func _handle_gravity_and_damage(delta: float):
-	# Çekim alanı görselin 2.5 katı
-	# Not: scale.x bizim çapımız. Yarıçap = scale.x / 2.0
 	var visual_radius = scale.x / 2.0
 	var gravity_zone = visual_radius * pull_radius_mult
 	
 	var enemies = get_tree().get_nodes_in_group("Enemies")
-	var hit_count = 0
 	
-	# Hasar zamanı geldi mi?
+	# Hasar zamanlayıcısını güncelle
+	_damage_timer -= delta
 	var can_damage = false
-	if damage_amount > 0:
-		_damage_timer -= delta
-		if _damage_timer <= 0.0:
-			_damage_timer = damage_interval
-			can_damage = true
-	
+	if _damage_timer <= 0.0:
+		_damage_timer = damage_interval
+		can_damage = true
+
 	for enemy in enemies:
 		if not is_instance_valid(enemy): continue
 		
-		var dist = global_position.distance_to(enemy.global_position)
+		# Mesafe Hesabı (Yüksekliği görmezden gelmek için Vector2 kullanıyoruz)
+		var hole_pos_2d = Vector2(global_position.x, global_position.z)
+		var enemy_pos_2d = Vector2(enemy.global_position.x, enemy.global_position.z)
+		var dist = hole_pos_2d.distance_to(enemy_pos_2d)
 		
-		# --- 1. ÇEKİM (Dışarıdaysa içeri çek) ---
+		# --- 1. ÇEKİM (Vakum Etkisi) ---
 		if dist <= gravity_zone:
-			# Eğer merkezde değilse çek
-			if dist > 0.5:
+			if dist > 0.4: # Tam merkezde titremeyi önlemek için eşik
 				var direction = (global_position - enemy.global_position).normalized()
 				
-				# Merkeze yaklaştıkça çekim gücü artsın (Daha gerçekçi)
-				var distance_factor = 1.0 - (dist / gravity_zone) # 0 (uzak) -> 1 (yakın)
-				var current_pull = pull_strength * (1.0 + distance_factor * 2.0)
+				# Merkeze yaklaştıkça artan çekim gücü
+				var distance_factor = 1.0 - (dist / gravity_zone)
+				var current_pull = pull_strength * (1.0 + distance_factor * 3.0)
 				
-				# Enemy hareketini manipüle et
 				if "velocity" in enemy:
-					# Mevcut hızını iptal edip merkeze yönlendir
 					enemy.velocity = enemy.velocity.lerp(direction * current_pull, delta * 8.0)
 					if not enemy.has_method("move_and_slide"):
 						enemy.global_position += direction * current_pull * delta
 				else:
-					enemy.global_position = enemy.global_position.lerp(global_position, delta * 3.0)
+					enemy.global_position = enemy.global_position.lerp(global_position, delta * 4.0)
 		
-		# --- 2. HASAR (Sadece TAM ORTADAYSA) ---
-		if can_damage and dist <= kill_radius:
+		# --- 2. HASAR ---
+		if dist <= kill_radius and can_damage and damage_amount > 0:
 			if enemy.has_method("take_damage"):
 				enemy.take_damage(damage_amount)
-				hit_count += 1
 
-	if hit_count > 0:
-		print("⚫ [Black Hole] Merkezde %d düşman öğütülüyor! (Hasar: %.1f)" % [hit_count, damage_amount])
+
+
 
 # --- GÖRSEL KURULUM (Aynı) ---
 func _setup_material():

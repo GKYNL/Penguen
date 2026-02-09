@@ -4,11 +4,11 @@
 [ext_resource type="SphereMesh" uid="uid://nvrxpfwwnsxe" path="res://vfx/snowball_impact/drawpass_snowball_vfx.tres" id="2_cj081"]
 [ext_resource type="Material" uid="uid://dvy47dwuekn86" path="res://vfx/ice_shard_impact/ice_shard_vfx.tres" id="3_n3yy8"]
 [ext_resource type="BoxMesh" uid="uid://clleqn4q5xitd" path="res://vfx/ice_shard_impact/drawpass_ice_shard.tres" id="4_n4shl"]
-[ext_resource type="PackedScene" uid="uid://xjyubls33p6" path="res://vfx/shatter.tscn" id="5_n4shl"]
+[ext_resource type="PackedScene" uid="uid://xjyubls33p6" path="res://Scenes/VFX/shatter.tscn" id="5_n4shl"]
 [ext_resource type="Shader" uid="uid://dajgnmvco2ovf" path="res://shaders/vfx_dash.gdshader" id="7_k7tm4"]
-[ext_resource type="PackedScene" uid="uid://0dypebitt7j" path="res://vfx/lightning.tscn" id="7_ukons"]
+[ext_resource type="PackedScene" uid="uid://0dypebitt7j" path="res://Scenes/VFX/lightning.tscn" id="7_ukons"]
 [ext_resource type="Shader" uid="uid://i3r0vkesjurn" path="res://shaders/vfx_tornado.gdshader" id="8_n3yy8"]
-[ext_resource type="PackedScene" uid="uid://3a42grex4dp1" path="res://vfx/OrbitalLaser.tscn" id="8_n4shl"]
+[ext_resource type="PackedScene" uid="uid://3a42grex4dp1" path="res://Scenes/VFX/OrbitalLaser.tscn" id="8_n4shl"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_k7tm4"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)

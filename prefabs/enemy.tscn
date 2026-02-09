@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://bve4nj3qxjyg1" path="res://Scripts/enemy.gd" id="1_abmcg"]
 [ext_resource type="PackedScene" uid="uid://bq2writufqw1f" path="res://xp.tscn" id="2_aivmq"]
 [ext_resource type="PackedScene" uid="uid://bkovv3tqoshmv" path="res://levels/projectiles/enemy_projectile.tscn" id="3_qnk7q"]
-[ext_resource type="PackedScene" uid="uid://c66eve0871x3x" path="res://vfx/vfx_explosion.tscn" id="4_2nw32"]
-[ext_resource type="PackedScene" uid="uid://bph58c1iovgje" path="res://vfx/vfx_execution_mark.tscn" id="4_a7d0n"]
+[ext_resource type="PackedScene" uid="uid://c66eve0871x3x" path="res://Scenes/VFX/vfx_explosion.tscn" id="4_2nw32"]
+[ext_resource type="PackedScene" uid="uid://bph58c1iovgje" path="res://Scenes/VFX/vfx_execution_mark.tscn" id="4_a7d0n"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_6n8dw"]
 
@@ -17,9 +17,9 @@ collision_layer = 3
 floor_stop_on_slope = false
 floor_block_on_wall = false
 script = ExtResource("1_abmcg")
-projectile_scene = ExtResource("3_qnk7q")
-xp_orb_scene = ExtResource("2_aivmq")
 explosion_vfx_scene = ExtResource("4_2nw32")
+xp_orb_scene = ExtResource("2_aivmq")
+projectile_scene = ExtResource("3_qnk7q")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=259001768]
 transform = Transform3D(1.7225599, 0, 0, 0, 1.727444, 0, 0, 0, 1.7335508, 0, 0.7186518, 0)
