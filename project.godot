@@ -28,6 +28,7 @@ AugmentManager="*res://Scripts/AugmentManager.gd"
 player=""
 Enemies=""
 MapGenerator=""
+enemy_spawner=""
 
 [input]
 
