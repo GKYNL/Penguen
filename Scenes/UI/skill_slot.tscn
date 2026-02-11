@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://cjhvfmpf6jxps"]
+
+[node name="Node2D" type="Node2D" unique_id=212761437]
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=568291241]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Icon" type="TextureRect" parent="." unique_id=1877519642]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextureProgressBar" type="TextureProgressBar" parent="." unique_id=76745403]
+offset_right = 40.0
+offset_bottom = 40.0
+fill_mode = 4
+tint_progress = Color(0.15294118, 0.15294118, 0.15294118, 0.8509804)
+
+[node name="Label" type="Label" parent="." unique_id=2098923494]
+offset_right = 40.0
+offset_bottom = 23.0

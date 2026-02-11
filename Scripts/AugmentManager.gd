@@ -12,6 +12,8 @@ var max_xp = 100
 var active_weapon_id = ""
 var max_gold_slots: int = 5
 var max_prism_slots: int = 2
+var MAX_PRISM_MECHANICS = 2
+var MAX_GOLD_MECHANICS = 7
 
 # YENİ: Kart seçimi sırasında Player'ı dondurmak için bayrak
 var is_selection_active: bool = false
@@ -61,7 +63,7 @@ func initialize_game_start():
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
 	#await get_tree().create_timer(3).timeout
-	_force_unlock_augment("prism_4", 4) 
+	_force_unlock_augment("prism_8", 4) 
 
 func _setup_initial_mechanics():
 	current_level = 1
@@ -164,6 +166,38 @@ func apply_augment(card_data):
 		print("Time Stop aktif. Oyun PAUSE kalmaya devam ediyor.")
 	else:
 		get_tree().paused = false
+
+func get_active_prism_count() -> int:
+	var count = 0
+	for id in mechanic_levels.keys():
+		if id.begins_with("prism_"):
+			count += 1
+	return count
+
+func get_active_gold_count() -> int:
+	var count = 0
+	for id in mechanic_levels.keys():
+		if id.begins_with("gold_"):
+			count += 1
+	return count
+
+# --- SEÇİM EKRANI İÇİN FİLTRELEME ---
+# Kartları seçime sunmadan önce bu kontrolü yapmalısın
+func can_take_augment(augment_id: String) -> bool:
+	# Eğer oyuncu bu karta zaten sahipse (Level atlatıyorsa) her zaman alabilir
+	if mechanic_levels.has(augment_id):
+		return true
+		
+	# Yeni bir PRISM alacaksa
+	if augment_id.begins_with("prism_"):
+		return get_active_prism_count() < MAX_PRISM_MECHANICS
+		
+	# Yeni bir GOLD alacaksa
+	if augment_id.begins_with("gold_"):
+		return get_active_gold_count() < MAX_GOLD_MECHANICS
+		
+	return true
+
 
 
 func _update_special_mechanic_stats(card_data, level):

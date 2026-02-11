@@ -34,6 +34,5 @@
 	{ "id": "prism_7", "rarity": "prismatic", "weight": 0.20, "name": "Dragon Breath", "max_level": 4, "type": "mechanic", "levels": [{"damage": 60}, {"damage": 100}, {"angle": 60}, {"damage": 250}] },
 	{ "id": "prism_8", "rarity": "prismatic", "weight": 0.35, "name": "Mirror Image", "max_level": 4, "type": "mechanic", "levels": [{"count": 1}, {"count": 2}, {"dmg": 0.3}, {"count": 4, "dmg": 0.5}] },
 	{ "id": "prism_9", "rarity": "prismatic", "weight": 0.25, "name": "Godspeed", "max_level": 4, "type": "mechanic", "levels": [{"speed": 1.5}, {"trail": true}, {"dmg_speed": 0.1}, {"speed": 2.5}] },
-	{ "id": "prism_10", "rarity": "prismatic", "weight": 0.05, "name": "Reality Warp", "max_level": 4, "type": "mechanic", "levels": [{"deflect": true}, {"buff": true}, {"invul": 2}, {"invul": 4}] }
   ]
 }

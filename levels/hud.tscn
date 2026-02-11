@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bgj4r3cqgcvtf"]
 
 [ext_resource type="Script" uid="uid://c03m6v1wpesl8" path="res://Scripts/hud.gd" id="1_37p78"]
-[ext_resource type="Texture2D" uid="uid://mky140xtn6vk" path="res://icon.svg" id="2_64ctp"]
+[ext_resource type="Texture2D" uid="uid://deetch2utsl06" path="res://Assets/progressbar.png" id="2_ysc4d"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ysc4d"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -27,16 +27,7 @@ border_color = Color(0.60784316, 0.18039216, 0, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a2258"]
 bg_color = Color(1, 0, 0, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1xsix"]
-bg_color = Color(0, 0.4862745, 0.4862745, 0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.4862745, 0.4862745, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rftc2"]
-bg_color = Color(3.4461616e-05, 0.9571319, 0.9571318, 1)
+[sub_resource type="Theme" id="Theme_1vf74"]
 
 [node name="HUD" type="CanvasLayer" unique_id=1393187076]
 script = ExtResource("1_37p78")
@@ -109,12 +100,13 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HealthBar" type="ProgressBar" parent="." unique_id=298753038]
-anchors_preset = 2
-anchor_top = 1.0
+anchors_preset = -1
+anchor_top = 0.95100003
+anchor_right = 0.16800001
 anchor_bottom = 1.0
-offset_top = -56.0
-offset_right = 193.0
-offset_bottom = -29.0
+offset_top = -0.24804688
+offset_right = -0.53601074
+offset_bottom = -5.0
 grow_vertical = 0
 mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_640wx")
@@ -123,68 +115,504 @@ value = 79.02
 show_percentage = false
 
 [node name="HealthLabel" type="Label" parent="HealthBar" unique_id=1150035039]
-layout_mode = 0
-offset_right = 193.0
-offset_bottom = 25.0
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="ManaBar" type="ProgressBar" parent="." unique_id=363997102]
-anchors_preset = 2
-anchor_top = 1.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -29.0
-offset_right = 193.0
 offset_bottom = -2.0
-grow_vertical = 0
-mouse_filter = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_1xsix")
-theme_override_styles/fill = SubResource("StyleBoxFlat_rftc2")
-value = 37.02
-show_percentage = false
-
-[node name="ManaLabel" type="Label" parent="ManaBar" unique_id=543306145]
-layout_mode = 0
-offset_right = 193.0
-offset_bottom = 27.0
+grow_horizontal = 2
+grow_vertical = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Abilities" type="HBoxContainer" parent="." unique_id=410879161]
-anchors_preset = -1
-anchor_left = 0.37100002
-anchor_top = 0.91
-anchor_right = 0.64400005
-anchor_bottom = 0.99700004
-offset_left = -0.3919983
-offset_top = 0.32000732
-offset_right = 341.11194
-offset_bottom = 71.94397
+[node name="Abilities" type="GridContainer" parent="." unique_id=1351243330]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -215.0
+offset_top = -51.0
+offset_right = 215.0
 grow_horizontal = 2
 grow_vertical = 0
-scale = Vector2(0.48000002, 0.44)
+columns = 9
 
-[node name="Q_Icon" type="TextureRect" parent="Abilities" unique_id=1786852734]
+[node name="Slot_0" type="Control" parent="Abilities" unique_id=1089562428]
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
-texture = ExtResource("2_64ctp")
-expand_mode = 3
 
-[node name="W_Icon" type="TextureRect" parent="Abilities" unique_id=56575620]
-layout_mode = 2
-texture = ExtResource("2_64ctp")
-expand_mode = 3
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_0" unique_id=537895341]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
 
-[node name="E_Icon" type="TextureRect" parent="Abilities" unique_id=901887497]
-layout_mode = 2
-texture = ExtResource("2_64ctp")
-expand_mode = 3
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_0" unique_id=926029804]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
 
-[node name="R_Icon" type="TextureRect" parent="Abilities" unique_id=1507280954]
-layout_mode = 2
-texture = ExtResource("2_64ctp")
-expand_mode = 3
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_0" unique_id=82992329]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
 
-[node name="Space_Icon" type="TextureRect" parent="Abilities" unique_id=412783367]
+[node name="NameLabel" type="Label" parent="Abilities/Slot_0" unique_id=475524292]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_1" type="Control" parent="Abilities" unique_id=19629086]
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
-texture = ExtResource("2_64ctp")
-expand_mode = 3
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_1" unique_id=1471468338]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_1" unique_id=520750722]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_1" unique_id=423859393]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_1" unique_id=456411190]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_2" type="Control" parent="Abilities" unique_id=623897220]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_2" unique_id=17863598]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_2" unique_id=37106736]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_2" unique_id=1585128675]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_2" unique_id=1564752038]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_3" type="Control" parent="Abilities" unique_id=572456946]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_3" unique_id=1681920333]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_3" unique_id=1659500326]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_3" unique_id=1927881014]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_3" unique_id=1844617916]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_4" type="Control" parent="Abilities" unique_id=1181836635]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_4" unique_id=1039759711]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_4" unique_id=467317605]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_4" unique_id=2143797762]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_4" unique_id=918030152]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_5" type="Control" parent="Abilities" unique_id=1671024841]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_5" unique_id=708433629]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_5" unique_id=3803220]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_5" unique_id=1505470577]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_5" unique_id=1949021396]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_6" type="Control" parent="Abilities" unique_id=1979913248]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_6" unique_id=2105946774]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_6" unique_id=1353250890]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_6" unique_id=1917492056]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_6" unique_id=1905305803]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_7" type="Control" parent="Abilities" unique_id=115907674]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_7" unique_id=1775859882]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_7" unique_id=499178432]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_7" unique_id=1790291511]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_7" unique_id=850381698]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Slot_8" type="Control" parent="Abilities" unique_id=600540415]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Abilities/Slot_8" unique_id=108093042]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+expand_mode = 1
+
+[node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_8" unique_id=1070823594]
+z_index = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = 200.98
+offset_bottom = 183.98
+scale = Vector2(0.225, 0.24)
+theme = SubResource("Theme_1vf74")
+rounded = true
+fill_mode = 4
+texture_progress = ExtResource("2_ysc4d")
+tint_under = Color(1, 1, 1, 0)
+tint_over = Color(1, 1, 1, 0)
+tint_progress = Color(0.20392157, 0.20392157, 0.20392157, 0.6156863)
+
+[node name="TimeLabel" type="Label" parent="Abilities/Slot_8" unique_id=1565688221]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.96700007
+anchor_bottom = 0.96700007
+offset_right = -0.020004272
+offset_bottom = -0.020004272
+
+[node name="NameLabel" type="Label" parent="Abilities/Slot_8" unique_id=128741839]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.35000002
+anchor_right = 0.96700007
+offset_top = -1.9999981
+offset_right = -0.020004272
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="DashContainer" type="HBoxContainer" parent="." unique_id=1091058328]
+anchors_preset = -1
+anchor_left = 0.172
+anchor_top = 0.938
+anchor_right = 0.266
+anchor_bottom = 1.0
+offset_left = -0.14401245
+offset_top = 0.17596436
+offset_right = 0.56799316
+grow_vertical = 0
+
+[node name="TextureRect" type="TextureRect" parent="DashContainer" unique_id=617242242]
+layout_mode = 2
+
+[node name="TextureRect2" type="TextureRect" parent="DashContainer" unique_id=1741227787]
+layout_mode = 2
+
+[node name="TextureRect3" type="TextureRect" parent="DashContainer" unique_id=746451456]
+layout_mode = 2

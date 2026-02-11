@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://h6rn3swcqfwv"]
+
+[ext_resource type="Script" uid="uid://cgiabcy17hrx" path="res://Scripts/vfx_dragon_breath.gd" id="1_eynl2"]
+
+[sub_resource type="Gradient" id="Gradient_eynl2"]
+offsets = PackedFloat32Array(0, 0.059322033, 0.21186441, 1)
+colors = PackedColorArray(1, 1, 0, 1, 0.88604146, 0.43963596, 0, 1, 0.9411765, 0, 0, 1, 0, 0, 0, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_tvhgq"]
+gradient = SubResource("Gradient_eynl2")
+
+[sub_resource type="Curve" id="Curve_tvhgq"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_qutja"]
+curve = SubResource("Curve_tvhgq")
+
+[sub_resource type="Curve" id="Curve_eynl2"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_tvhgq"]
+curve = SubResource("Curve_eynl2")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_qutja"]
+direction = Vector3(0, 0, -1)
+spread = 23.792
+initial_velocity_min = 8.0
+initial_velocity_max = 10.0
+gravity = Vector3(0, 3, 0)
+scale_min = 0.5
+scale_max = 1.5
+scale_curve = SubResource("CurveTexture_tvhgq")
+color_ramp = SubResource("GradientTexture1D_tvhgq")
+emission_curve = SubResource("CurveTexture_qutja")
+
+[sub_resource type="Gradient" id="Gradient_tvhgq"]
+colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_qutja"]
+gradient = SubResource("Gradient_tvhgq")
+fill = 1
+fill_from = Vector2(0.491453, 0.45299146)
+fill_to = Vector2(0, 0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6x8rb"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = SubResource("GradientTexture2D_qutja")
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_srcq2"]
+material = SubResource("StandardMaterial3D_6x8rb")
+
+[node name="FlameParticles" type="GPUParticles3D" unique_id=275949606]
+amount = 150
+lifetime = 1.5
+process_material = SubResource("ParticleProcessMaterial_qutja")
+draw_pass_1 = SubResource("QuadMesh_srcq2")
+script = ExtResource("1_eynl2")

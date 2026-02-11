@@ -4,19 +4,31 @@ class_name hud
 @onready var xp_bar = $XPBar
 @onready var health_bar = $HealthBar
 @onready var health_label = $HealthBar/HealthLabel 
-@onready var mana_bar = $ManaBar
-@onready var mana_label = $ManaBar/ManaLabel      
 @onready var level_label = $LevelLabel
 @onready var weapon_manager = $"../WeaponManager"
 @onready var info_panel = $InfoPanel
 @onready var info_label = $InfoPanel/InfoLabel
 @onready var xp_text = $XPBar/XPLabel
+@onready var ability_container = $Abilities
+@onready var dash_container = $DashContainer
+
 
 # YENİ: Zamanlayıcı Label'ı (Senin eklediğin Label'ın adı buraya gelecek)
 @onready var time_label = $TimerLabel 
 
 var last_hp: float = 0.0
 var game_time: float = 0.0 # Oyun süresini tutacak değişken
+# Takip listesi: { "prism_4": slot_node }
+var active_slots = {} 
+
+# Takip edilecek aktif skillerin Player scriptindeki isimleri (Map)
+var skill_map = {
+	"gold_1": {"timer": "thunder_timer", "cd": "thunderlord_cooldown"},
+	"prism_3": {"timer": "stomp_timer", "cd": "stomp_interval"},
+	"prism_4": {"timer": "black_hole_timer", "cd": "black_hole_cooldown"},
+	"prism_6": {"timer": "time_stop_timer", "cd": "time_stop_actual_cd"}, # Actual CD'yi bağladık
+	"prism_7": {"timer": "dragon_timer", "cd": "dragon_cooldown"}
+}
 
 func _ready():
 	# XP Sinyallerini bağlarken doğru fonksiyona yönlendirdik
@@ -41,14 +53,14 @@ func _ready():
 		info_panel.modulate.a = 0
 		info_panel.visible = false
 
-# YENİ: Her karede (frame) çalışır ve süreyi günceller
+
 func _process(delta):
-	# Oyun duraklatıldığında (seçim ekranı vs.) süre de dursun istersen bu mantık zaten çalışır
-	# Çünkü get_tree().paused = true olduğunda process de durur (Node ayarına bağlı)
 	game_time += delta
 	_update_timer_display()
-
-# YENİ: Süreyi Dakika:Saniye formatına çevirip yazdırır
+	_update_ability_slots()
+	_update_dash_visuals()
+	_check_for_new_augments()
+	
 func _update_timer_display():
 	if time_label:
 		var minutes = int(game_time / 60)
@@ -111,12 +123,6 @@ func _on_player_health_changed(current_hp, max_hp):
 	else:
 		health_bar.modulate = Color.WHITE
 
-func update_mana(current, max_m):
-	if mana_bar:
-		mana_bar.max_value = max_m
-		mana_bar.value = current
-	if mana_label:
-		mana_label.text = str(int(current)) + " / " + str(int(max_m))
 
 func _shake_node(node: Control):
 	var original_pos = node.position
@@ -137,3 +143,93 @@ func animate_cooldown(icon_node: TextureRect, time: float):
 		flash.tween_property(icon_node, "scale", Vector2(1.2, 1.2), 0.1)
 		flash.tween_property(icon_node, "scale", Vector2(1.0, 1.0), 0.1)
 	)
+
+
+
+
+# Yeni bir augment alınmış mı kontrol et ve slota ata
+func _check_for_new_augments():
+	var levels = AugmentManager.mechanic_levels
+	for id in levels.keys():
+		if not active_slots.has(id):
+			_assign_slot_to_augment(id)
+
+# Boş slot bul ve augmenti oraya yerleştir
+func _assign_slot_to_augment(aug_id: String):
+	if active_slots.has(aug_id): return 
+
+	var slots = ability_container.get_children()
+	
+	for s in slots:
+		if not s.has_meta("occupied"):
+			s.set_meta("occupied", true)
+			active_slots[aug_id] = s
+			
+			# İkon Atama
+			var icon_node = s.get_node_or_null("Icon")
+			if icon_node:
+				var path = "res://Assets/Icons/" + aug_id + ".png"
+				if FileAccess.file_exists(path):
+					icon_node.texture = load(path)
+				icon_node.visible = true
+			
+			# AD VE LEVEL ETİKETİ (İLK ATAMA)
+			var name_label = s.get_node_or_null("NameLabel")
+			if name_label:
+				# ID'yi daha okunaklı yapalım: "prism_4" -> "BLACK HOLE"
+				# Bunun için JSON'dan veri çekmek en iyisi ama şimdilik ID'yi temizleyelim
+				var readable_name = aug_id.replace("prism_", "").replace("gold_", "").replace("_", " ").to_upper()
+				var level = AugmentManager.mechanic_levels.get(aug_id, 1)
+				name_label.text = readable_name + " LV." + str(level)
+				name_label.visible = true
+			
+			return
+
+# Cooldown Barını ve Yazısını Güncelle
+func _update_ability_slots():
+	var p = get_tree().get_first_node_in_group("player")
+	if not p: return
+	
+	var levels = AugmentManager.mechanic_levels
+	
+	for id in active_slots.keys():
+		var slot = active_slots[id]
+		
+		# 1. Level Bilgisini Güncelle (Her zaman çalışır)
+		var name_label = slot.get_node_or_null("NameLabel")
+		if name_label:
+			var readable_name = id.replace("prism_", "").replace("gold_", "").replace("_", " ").to_upper()
+			var current_lvl = levels.get(id, 1)
+			name_label.text = readable_name + " LV." + str(current_lvl)
+
+		# 2. Cooldown Kontrolü (Sadece Aktif Skiller İçin)
+		if skill_map.has(id):
+			var data = skill_map[id]
+			var current_timer = p.get(data.timer)
+			var max_cd = p.get(data.cd)
+			
+			var progress = slot.get_node("Progress")
+			var time_text = slot.get_node("TimeLabel")
+			
+			if current_timer != null and current_timer > 0:
+				progress.visible = true
+				progress.value = (current_timer / max_cd) * 100
+				time_text.text = "%.1f" % current_timer
+				time_text.visible = true
+			else:
+				progress.visible = false
+				time_text.visible = false
+
+# Dash Yüklerini Güncelle (Hibrit)
+func _update_dash_visuals():
+	var p = get_tree().get_first_node_in_group("player")
+	if not p: return
+	
+	var dashes = dash_container.get_children()
+	var current_dash = p.current_dash_charges
+	
+	for i in range(dashes.size()):
+		if i < current_dash:
+			dashes[i].modulate = Color.WHITE # Dolu
+		else:
+			dashes[i].modulate = Color(0.2, 0.2, 0.2, 0.5) # Boş/Beklemede

@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://yqjol17nqjc0"]
+
+[ext_resource type="Script" uid="uid://int35fluyt85" path="res://Scripts/vfx_godspeed.gd" id="1_nqt4y"]
+[ext_resource type="Shader" uid="uid://j2in4h8ba13w" path="res://shaders/sonic_boom.gdshader" id="3_nbcgv"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_4v8gm"]
+top_radius = 0.0
+bottom_radius = 3.0
+height = 2.5
+radial_segments = 82
+rings = 32
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jlk1k"]
+render_priority = 0
+shader = ExtResource("3_nbcgv")
+shader_parameter/shock_color = Color(1, 0.5, 0, 1)
+shader_parameter/power = 1.0
+
+[sub_resource type="Gradient" id="Gradient_nqt4y"]
+offsets = PackedFloat32Array(0, 0.392, 0.5127119, 1)
+colors = PackedColorArray(0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0.54901963, 1, 1, 1, 0, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_cmj2j"]
+gradient = SubResource("Gradient_nqt4y")
+
+[sub_resource type="Curve" id="Curve_nqt4y"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_cmj2j"]
+curve = SubResource("Curve_nqt4y")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_nbcgv"]
+emission_shape = 3
+emission_box_extents = Vector3(0.3, 0.5, 0.3)
+gravity = Vector3(0, 0, 0)
+scale_curve = SubResource("CurveTexture_cmj2j")
+color_ramp = SubResource("GradientTexture1D_cmj2j")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i5tjm"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_nqt4y"]
+material = SubResource("StandardMaterial3D_i5tjm")
+shape = 0
+size = 0.5
+
+[node name="VFX_Godspeed" type="Node3D" unique_id=1705668159]
+script = ExtResource("1_nqt4y")
+
+[node name="SonicBoomMesh" type="MeshInstance3D" parent="." unique_id=2108316150]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, -2.669958)
+mesh = SubResource("CylinderMesh_4v8gm")
+surface_material_override/0 = SubResource("ShaderMaterial_jlk1k")
+
+[node name="TrailParticles" type="GPUParticles3D" parent="." unique_id=618691394]
+amount = 50
+lifetime = 0.5
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_nbcgv")
+draw_pass_1 = SubResource("RibbonTrailMesh_nqt4y")

@@ -51,7 +51,11 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 func _ready():
 	add_to_group("Enemies")
-	if execution_mark: execution_mark.hide()
+	
+	# FIX: Execution mark başlangıçta kesinlikle gizli olmalı
+	if execution_mark: 
+		execution_mark.hide()
+		execution_mark.scale = Vector3.ONE 
 	
 	logic_timer = Timer.new()
 	logic_timer.wait_time = 0.1
@@ -83,6 +87,12 @@ func _on_logic_tick():
 	var final_speed = movement_speed * (1.0 - current_slow_factor)
 	final_speed = max(0.5, final_speed)
 
+	var target_radius = 0.5 
+	if player.scale.x > 1.0:
+		target_radius *= player.scale.x 
+	
+	var effective_attack_range = attack_range + target_radius 
+
 	if type == EnemyType.ARCHER:
 		var keep_dist = 12.0
 		if dist > keep_dist + 1.5:
@@ -95,7 +105,7 @@ func _on_logic_tick():
 			velocity.x = 0; velocity.z = 0
 		if can_attack and dist <= 18.0: shoot_at_player()
 	else:
-		if dist <= 2.2:
+		if dist <= effective_attack_range:
 			velocity.x = 0; velocity.z = 0
 			attack_player()
 		else:
@@ -113,35 +123,39 @@ func take_damage(amount: float):
 	current_hp -= amount
 	_show_damage_numbers(amount, Color.WHITE)
 	
-	if AugmentManager.mechanic_levels.has("gold_3"):
+	# FIX: GOLD_4 (Executioner) Kontrolü
+	if AugmentManager.mechanic_levels.has("gold_4"):
 		var threshold = AugmentManager.player_stats.get("execution_threshold", 0.15)
-		if current_hp <= max_hp * threshold:
+		# Can %15'in altındaysa ve ölmediyse idam et
+		if current_hp > 0 and current_hp <= max_hp * threshold:
 			_execute_enemy()
 			return
+			
 	if current_hp <= 0: die()
 
 func _execute_enemy():
 	if is_dying: return
-	is_dying = true
-	current_hp = 0
+	
+	# Görsel Efekt (Sadece öldürürken görünür)
 	if execution_mark: 
 		execution_mark.show()
-		create_tween().tween_property(execution_mark, "scale", Vector3.ONE * 1.5, 0.15).set_trans(Tween.TRANS_BOUNCE)
-	_show_damage_numbers(666, Color.RED)
+		execution_mark.scale = Vector3.ZERO
+		var tw = create_tween()
+		tw.tween_property(execution_mark, "scale", Vector3.ONE * 1.5, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	_show_damage_numbers(9999, Color.RED) 
 	die()
 
 func die():
 	is_dying = true
+	current_hp = 0
 	collision_layer = 0
 	collision_mask = 0
 	logic_timer.stop()
 	
-	# Hasar sayılarını temizle
-	for l in get_tree().get_nodes_in_group("damage_labels"):
-		if l.get_meta("belongs_to") == self:
-			l.queue_free()
 
-	# --- VAMPIRISM ---
+	
+	# --- VAMPIRISM (Gold 1) ---
 	if AugmentManager.mechanic_levels.has("gold_1"):
 		var p = get_tree().get_first_node_in_group("player")
 		if p and p.has_method("heal"):
@@ -150,32 +164,34 @@ func die():
 	var wm = get_tree().get_first_node_in_group("weapon_manager")
 	if wm and wm.has_method("on_enemy_killed"): wm.on_enemy_killed(self)
 	
-	# XP Orb (Bunu da ileride pool yapabiliriz ama şimdilik kalsın)
+	# XP Orb
 	if xp_orb_scene:
 		var orb = xp_orb_scene.instantiate()
 		get_tree().root.add_child(orb)
 		orb.global_position = global_position + Vector3(0, 0.5, 0)
 		if "xp_value" in orb: orb.xp_value = xp_reward
 		
-	# --- VFX POOL ENTEGRASYONU ---
-	# gold_4: Chain Reaction veya Patlama Augment'i
-	if AugmentManager.mechanic_levels.has("gold_4"):
-		# Manager üzerinden anahtar kelimeyle (explosion) çağırıyoruz
-		VFXPoolManager.spawn_vfx("explosion", global_position)
-		
-	# Eğer Thunderlord vb. başka efektlerin varsa buraya ekleyebilirsin:
-	# VFXPoolManager.spawn_vfx("thunder", global_position)
-
-	# Ölüm animasyonu ve yer altına gönderiş
+	# Ölüm Animasyonu
 	var tw = create_tween()
-	tw.tween_property(self, "scale", Vector3(0.01, 0.01, 0.01), 0.3).set_ease(Tween.EASE_IN)
+	tw.tween_property(self, "scale", Vector3(0.01, 0.01, 0.01), 0.25).set_ease(Tween.EASE_IN)
 	tw.finished.connect(_send_to_underworld)
+	
+	
+	for label in get_tree().get_nodes_in_group("damage_labels"):
+		if label.get_meta("owner_id", "") == str(get_instance_id()):
+			label.queue_free()
+	
+	collision_layer = 0
+	collision_mask = 0
 
 func _send_to_underworld():
+	# Havuza dönmeden önce üzerindeki efektleri temizle
+	if execution_mark: execution_mark.hide()
+	
 	visible = false
 	process_mode = Node.PROCESS_MODE_DISABLED
-	global_position = Vector3(0, -50, 0) # Haritanın altına ışınla
-	emit_signal("returned_to_pool", self) # Spawner'a "yerime geçtim" de
+	global_position = Vector3(0, -50, 0) 
+	emit_signal("returned_to_pool", self) 
 
 # --- RE-SETUP (HAVUZDAN ÇIKARKEN) ---
 func reset_for_spawn():
@@ -184,7 +200,11 @@ func reset_for_spawn():
 	can_attack = true
 	current_slow_factor = 0.0
 	
-	# JOLT FIX: Tam sıfır yerine çok küçük bir değerden başla
+	# FIX: Yeni doğan düşmanda Execution Mark GİZLİ olmalı
+	if execution_mark: 
+		execution_mark.hide()
+		execution_mark.scale = Vector3.ONE
+	
 	scale = Vector3(0.01, 0.01, 0.01) 
 	
 	visible = true
@@ -195,13 +215,12 @@ func reset_for_spawn():
 	if logic_timer:
 		logic_timer.start()
 
-	# Giriş animasyonu: 0.01'den 1.0'a
 	var tw = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(self, "scale", Vector3.ONE, 0.4)
 	
 	update_visuals()
 
-# --- DİĞER FONKSİYONLAR (Görsel, Saldırı, Hasar Sayıları) ---
+# --- DİĞER FONKSİYONLAR ---
 func setup_stats_by_stage():
 	max_hp = 25.0 * stage; damage = 8.0 * stage; xp_reward = 45 * stage
 	if is_elite: max_hp *= 4.0; damage *= 1.5; xp_reward *= 5
@@ -241,21 +260,17 @@ func shoot_at_player():
 func _show_damage_numbers(value, color):
 	var label = Label3D.new()
 	get_tree().root.add_child(label)
-	label.global_position = global_position + Vector3(0, 2.5, 0)
+	label.add_to_group("damage_labels")
+	label.set_meta("owner_id", str(get_instance_id())) # Kimin yazısı olduğunu işaretle
+	
+	label.global_position = global_position + Vector3(0, 2.0, 0)
 	label.text = str(int(value))
 	label.modulate = color
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
 	label.pixel_size = 0.01
-	label.font_size = 80 # Biraz daha büyük
 	
-	var random_offset = Vector3(randf_range(-1.5,1.5), randf_range(2,3.5), randf_range(-1.5,1.5))
 	var tw = create_tween().set_parallel(true)
-	tw.tween_property(label, "global_position", label.global_position + random_offset, 0.6).set_ease(Tween.EASE_OUT)
-	label.scale = Vector3.ZERO
-	# Hasar sayısı "fırlayarak" gelsin
-	tw.tween_property(label, "scale", Vector3.ONE * 2.5, 0.3).set_trans(Tween.TRANS_BACK)
-	tw.tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.3)
+	tw.tween_property(label, "global_position:y", label.global_position.y + 2.0, 0.4)
+	tw.tween_property(label, "modulate:a", 0.0, 0.4)
 	tw.chain().tween_callback(label.queue_free)
-	label.set_meta("belongs_to", self) # Bu yazı bu düşmana ait
-	label.add_to_group("damage_labels")
