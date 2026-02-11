@@ -63,7 +63,7 @@ func initialize_game_start():
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
 	#await get_tree().create_timer(6).timeout
-	#_force_unlock_augment("prism_1", 4) 
+	#_force_unlock_augment("gold_8", 4) 
 
 func _setup_initial_mechanics():
 	current_level = 1

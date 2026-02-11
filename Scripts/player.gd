@@ -15,6 +15,7 @@ signal health_changed(current_health, max_health)
 @onready var static_field_vfx = get_node_or_null("VFX_Static")
 @onready var weapon_manager = get_node_or_null("WeaponManager")
 @onready var spell_weaver_aura = get_node_or_null("VFX_SpellWeaver")
+@onready var pause_menu = $PauseMenu
 
 # Sürekli sahnede kalan efektler
 var winter_aura_instance = null
@@ -22,7 +23,6 @@ var time_stop_instance = null
 
 var current_hp: float = 100.0
 
-var aura_timer: Timer
 var current_dash_charges: int = 1
 var max_dash_charges: int = 1
 var dash_timer: float = 0.0
@@ -30,6 +30,8 @@ var dash_cooldown: float = 3.0
 var can_dash: bool = true
 var dash_speed_bonus: float = 1.0
 var final_cd: float = 3.0
+var dash_cooldown_base: float = 3.0
+var is_recharging: bool = false
 
 # Skill Variables
 var dragon_timer: float = 0.0
@@ -57,6 +59,14 @@ var base_time_stop_cd: float = 30.0
 var is_time_stopped: bool = false
 var time_stop_remaining_duration: float = 0.0
 var clone_update_timer: float = 0.0
+var aura_timer: Timer
+
+
+
+var health: float = 100.0
+var statss: Dictionary = {"strength": 10, "agility": 10}
+var augments: Array = []
+var mana: float = 50.0
 
 
 func _ready() -> void:
@@ -80,6 +90,40 @@ func _ready() -> void:
 	add_child(aura_timer)
 	
 	call_deferred("_manage_aura_visibility")
+	var saved_data = SaveSystem.load_save_data()
+	if saved_data and saved_data.has("player"):
+		global_position = Vector3(
+			saved_data.player.pos_x, 
+			saved_data.player.get("pos_y", 0.0),
+			saved_data.player.get("pos_z", 0.0) 
+		)
+		
+		health = saved_data.player.get("health", 100.0)
+		statss = saved_data.player.get("stats", {})
+		augments = saved_data.player.get("augments", [])
+		mana = saved_data.player.get("mana", 50.0)
+
+
+func _restore_cds(cd_data):
+	for skill_name in cd_data:
+		var timer = get_node("SkillTimers/" + skill_name)
+		if timer and cd_data[skill_name] > 0:
+			timer.start(cd_data[skill_name])
+
+func load_from_save(data):
+	if data and data.has("player"):
+		var p_data = data.player
+		
+		# XP ve Level
+		AugmentManager.current_xp = p_data.get("current_xp", 0)
+		AugmentManager.current_level = p_data.get("player_level", 1)
+		
+		# Augmentler
+		augments = p_data.get("augments", [])
+		
+		# Artık bu augmentleri yetenek sistemine geri tanıtman gerekebilir
+		_reapply_augments()
+
 
 func sync_stats_from_manager():
 	var stats = AugmentManager.player_stats
@@ -258,7 +302,7 @@ func execute_dash() -> void:
 	var ww_level = AugmentManager.mechanic_levels.get("gold_8", 0)
 	current_dash_charges -= 1
 	
-	# --- YÖN HESAPLAMA ---
+	# 1. YÖN HESAPLAMA
 	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction = -body_mesh.global_transform.basis.z.normalized()
 	if input_dir.length() > 0.1:
@@ -266,49 +310,58 @@ func execute_dash() -> void:
 		direction = (Vector3(cam_basis.x.x, 0, cam_basis.x.z).normalized() * input_dir.x + 
 					 Vector3(cam_basis.z.x, 0, cam_basis.z.z).normalized() * input_dir.y).normalized()
 
-	# --- VFX ---
+	# 2. VFX
 	var dash_vfx = VFXPoolManager.spawn_vfx("wind_dash", global_position)
 	if dash_vfx:
 		dash_vfx.look_at(global_position + direction, Vector3.UP)
 		dash_vfx.rotate_object_local(Vector3.RIGHT, PI/2)
 
-	# --- HAREKET ---
+	# 3. HAREKET
 	if ww_level >= 4:
 		global_position += direction * 8.5
 	else:
 		velocity = direction * 40.0
 		if ww_level >= 2:
 			dash_speed_bonus = 2.0
-			create_tween().tween_property(self, "dash_speed_bonus", 1.0, 1.2)
+			var tw = create_tween()
+			tw.tween_property(self, "dash_speed_bonus", 1.0, 1.2)
 
-	# --- COOLDOWN HESABI ---
-	dash_cooldown = final_cd # Hesapladığın final_cd
-	dash_timer = dash_cooldown
-	_recharge_dash(dash_cooldown, ww_level)
+	# 4. COOLDOWN HESABI (Şarj dolumuna başlamadan ÖNCE hesapla)
+	var cdr = AugmentManager.player_stats.get("cooldown_reduction", 0.0)
+	final_cd = dash_cooldown_base * (1.0 - cdr)
+	if ww_level >= 3: final_cd *= 0.5
 	
-	if ww_level >= 3:
-		final_cd *= 0.5
-	
-	# Timer'ı başlat (HUD bunu okuyacak)
-	dash_timer = final_cd
-	_recharge_dash(final_cd, ww_level)
+	# Maksimum şarj sayısını güncelle (HUD buna bakıyor)
+	max_dash_charges = AugmentManager.player_stats.get("dash_charges", 1)
+	if ww_level >= 3: max_dash_charges += 1
+
+	# 5. ŞARJ DOLUMUNU TETİKLE (Zaten dolmuyorsa başlat)
+	if not is_recharging:
+		_start_recharge_cycle()
 
 # Şarj Doldurma (Level 3 ekstra yük kapasitesi sağlar)
-func _recharge_dash(wait_time: float, ww_lvl: int):
+func _start_recharge_cycle():
+	if current_dash_charges >= max_dash_charges:
+		is_recharging = false
+		dash_timer = 0
+		return
+		
+	is_recharging = true
+	dash_timer = final_cd # Barı tam doluya çek
+	
 	var tw = create_tween()
-	tw.tween_property(self, "dash_timer", 0.0, wait_time) # Timer'ı 0'a indirir
+	# dash_timer'ı wait_time (final_cd) süresince 0'a indirir
+	tw.tween_property(self, "dash_timer", 0.0, final_cd)
+	
 	await tw.finished
-
 	
-	var max_charges = AugmentManager.player_stats.get("dash_charges", 1)
-	if ww_lvl >= 3: max_charges += 1
+	current_dash_charges += 1
 	
-	if current_dash_charges < max_charges:
-		current_dash_charges += 1
-		# Eğer hala dolacak şarj varsa timer'ı tekrar kur (opsiyonel)
-		if current_dash_charges < max_charges:
-			dash_timer = final_cd
-			_recharge_dash(final_cd, ww_lvl)
+	# Eğer hala eksik şarj varsa döngüyü devam ettir
+	if current_dash_charges < max_dash_charges:
+		_start_recharge_cycle()
+	else:
+		is_recharging = false
 
 func _clear_projectiles_in_range(radius: float):
 	# Düşman mermilerini EnemyProjectiles grubundan siler

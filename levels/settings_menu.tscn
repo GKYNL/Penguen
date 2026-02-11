@@ -1,0 +1,108 @@
+[gd_scene format=3 uid="uid://dnvclhcbfltqr"]
+
+[ext_resource type="Script" uid="uid://b1kqa2jbnild7" path="res://Scripts/UI/settings.gd" id="1_2oyia"]
+
+[node name="MainControl" type="Control" unique_id=1383525183]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_2oyia")
+
+[node name="SettingsPanel" type="PanelContainer" parent="." unique_id=1254367189]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.20300001
+anchor_right = 0.30800003
+anchor_bottom = 0.79700005
+offset_left = -1.0
+offset_top = -0.044006348
+offset_right = -0.81604004
+offset_bottom = 0.043945313
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="SettingsPanel" unique_id=504505684]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SettingsPanel/MarginContainer" unique_id=1415067320]
+layout_mode = 2
+alignment = 1
+
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/MarginContainer/VBoxContainer" unique_id=687217603]
+layout_mode = 2
+text = "SETTINGS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="SettingsPanel/MarginContainer/VBoxContainer" unique_id=324795761]
+custom_minimum_size = Vector2(58.275, 183.2)
+layout_mode = 2
+
+[node name="OptionsList" type="VBoxContainer" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer" unique_id=121807655]
+layout_mode = 2
+
+[node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList" unique_id=221087076]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/MusicRow" unique_id=820062807]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Music Volume"
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/MusicRow" unique_id=1482962158]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="SFXRow" type="HBoxContainer" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList" unique_id=626204723]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/SFXRow" unique_id=1988525672]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SFX Volume"
+vertical_alignment = 1
+
+[node name="SFXSlider" type="HSlider" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/SFXRow" unique_id=1881069030]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="ResolutionRow" type="HBoxContainer" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList" unique_id=360632572]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/ResolutionRow" unique_id=2058028504]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Resolution"
+vertical_alignment = 1
+
+[node name="ResOption" type="OptionButton" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/ResolutionRow" unique_id=795470504]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="FullscreenRow" type="HBoxContainer" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList" unique_id=1289793977]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/FullscreenRow" unique_id=428178780]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Fullscreen"
+vertical_alignment = 1
+
+[node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/MarginContainer/VBoxContainer/ScrollContainer/OptionsList/FullscreenRow" unique_id=770198140]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="SettingsPanel/MarginContainer/VBoxContainer" unique_id=576060426]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="SettingsPanel/MarginContainer/VBoxContainer" unique_id=1669858106]
+layout_mode = 2
+text = "Back"

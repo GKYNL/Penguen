@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 
 AugmentManager="*res://Scripts/AugmentManager.gd"
 VFXPoolManager="*uid://d02ww8pgfqu02"
+SaveSystem="*uid://d0rqr74wkfskk"
 
 [global_group]
 

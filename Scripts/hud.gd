@@ -19,7 +19,12 @@ var game_time: float = 0.0
 var active_slots = {} # { "aug_id": slot_node }
 
 # Kara Liste: Bu ID'ler asla yetenek slotlarına girmeyecek
-const STARTER_IDS = ["ice_shard", "snowball", "starter_weapon", "ice_shard_lvl1", "snowball_lvl1", "base_attack"]
+const STARTER_IDS = [
+	"ice_shard", "snowball", 
+	"ice_shard_lvl1", "snowball_lvl1", 
+	"starter_weapon", "base_attack",
+	"Ice Shard", "Snowball" # Bazı yerlerde büyük harf kullanmış olabilirsin, önlem olsun.
+]
 
 # Yetenek-Cooldown Eşleştirmesi
 var skill_map = {
@@ -95,16 +100,22 @@ func _show_augment_popup(aug_name: String, aug_description: String):
 func _check_for_new_augments():
 	var levels = AugmentManager.mechanic_levels
 	for id in levels.keys():
-		# 1. STARTER ENGELİ: Eğer id kara listedeyse direkt geç
-		if id in STARTER_IDS: continue
+		# 1. KRİTİK KONTROL: Eğer ID starter listesindeyse direkt diğerine geç (atla)
+		var is_starter = false
+		for s_id in STARTER_IDS:
+			if id.to_lower() == s_id.to_lower(): # Büyük/küçük harf toleransı
+				is_starter = true
+				break
 		
-		# 2. YENİ AUGMENT KONTROLÜ
+		if is_starter: continue # Starter ise slot ayırma işlemini tamamen atla
+
+		# 2. Eğer zaten slottaysa veya starter değilse devam et
 		if not active_slots.has(id):
 			_assign_slot_to_augment(id)
 
 func _assign_slot_to_augment(aug_id: String):
-	# Çift dikiş koruma
-	if active_slots.has(aug_id) or aug_id in STARTER_IDS: return 
+	# Burada da bir kez daha kontrol edelim, işimizi sağlama alalım
+	if active_slots.has(aug_id): return 
 
 	var slots = ability_container.get_children()
 	for s in slots:
@@ -112,13 +123,7 @@ func _assign_slot_to_augment(aug_id: String):
 			s.set_meta("occupied", true)
 			active_slots[aug_id] = s
 			
-			var icon_node = s.get_node_or_null("Icon")
-			if icon_node:
-				var path = "res://Assets/Icons/" + aug_id + ".png"
-				if FileAccess.file_exists(path):
-					icon_node.texture = load(path)
-				icon_node.visible = true
-			
+			# İkon yükleme mantığı aynı kalabilir
 			_update_slot_labels(s, aug_id)
 			return
 

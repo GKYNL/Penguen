@@ -1,0 +1,107 @@
+[gd_scene format=3 uid="uid://bdkrvpkrhan26"]
+
+[ext_resource type="Script" uid="uid://5f0ldg0bmf31" path="res://Scripts/UI/pause_menu.gd" id="1_e7fsp"]
+[ext_resource type="Shader" uid="uid://dpq1v6c7dygxo" path="res://shaders/blur.gdshader" id="2_qlm62"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3jqdk"]
+shader = ExtResource("2_qlm62")
+shader_parameter/blur_radius = 8
+shader_parameter/blur_strength = 1.8760000858501202
+
+[node name="PauseMenu" type="CanvasLayer" unique_id=2101760775]
+script = ExtResource("1_e7fsp")
+
+[node name="BackgroundBlur" type="ColorRect" parent="." unique_id=1060391894]
+material = SubResource("ShaderMaterial_3jqdk")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1509415159]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -72.0
+offset_top = -50.5
+offset_right = 72.0
+offset_bottom = 50.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuButtons" type="VBoxContainer" parent="MarginContainer" unique_id=2084196428]
+layout_mode = 2
+alignment = 1
+
+[node name="ResumeButton" type="Button" parent="MarginContainer/MenuButtons" unique_id=1583309202]
+layout_mode = 2
+text = "Resume"
+
+[node name="SettingsButton" type="Button" parent="MarginContainer/MenuButtons" unique_id=1888263341]
+layout_mode = 2
+text = "Settings"
+
+[node name="MainMenuButton" type="Button" parent="MarginContainer/MenuButtons" unique_id=1273022476]
+layout_mode = 2
+text = "Main Menu"
+
+[node name="ConfirmPanel" type="Control" parent="." unique_id=79270526]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -128.0
+offset_top = -29.0
+offset_right = 128.0
+offset_bottom = 38.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelBG" type="Panel" parent="ConfirmPanel" unique_id=347888515]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -151.0
+offset_top = -62.5
+offset_right = 206.0
+offset_bottom = 92.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ConfirmPanel" unique_id=123977082]
+layout_mode = 0
+offset_right = 256.0
+offset_bottom = 58.0
+
+[node name="ConfirmLabel" type="Label" parent="ConfirmPanel/VBoxContainer" unique_id=1078159572]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0.101960786, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
+theme_override_constants/line_spacing = -3
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_outline_size = 7
+text = "Are you sure you want to exit?
+"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ConfirmPanel/VBoxContainer" unique_id=1769717366]
+layout_mode = 2
+theme_override_constants/separation = 26
+alignment = 1
+
+[node name="YesButton" type="Button" parent="ConfirmPanel/VBoxContainer/HBoxContainer" unique_id=717438764]
+layout_mode = 2
+text = "Yes, Save & Exit"
+
+[node name="NoButton" type="Button" parent="ConfirmPanel/VBoxContainer/HBoxContainer" unique_id=1020936452]
+layout_mode = 2
+text = "No, Stay"

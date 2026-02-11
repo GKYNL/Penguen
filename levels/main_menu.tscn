@@ -1,8 +1,8 @@
-[gd_scene load_steps=14 format=3 uid="uid://do181ma7o47eh"]
+[gd_scene format=3 uid="uid://do181ma7o47eh"]
 
 [ext_resource type="Material" uid="uid://bpiqxawfjk7rw" path="res://materials/ice_snow.tres" id="1_duh7t"]
 [ext_resource type="PackedScene" uid="uid://dqsu4d5khjbas" path="res://prefabs/player.tscn" id="2_6ymyu"]
-[ext_resource type="Script" path="res://Scripts/ui_play.gd" id="3_6ymyu"]
+[ext_resource type="Script" uid="uid://qm80hm3278kb" path="res://Scripts/UI/main_menu.gd" id="3_6ymyu"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_7rktv"]
 sky_top_color = Color(0.13120672, 0.6329743, 0.95348483, 1)
@@ -11,16 +11,17 @@ ground_bottom_color = Color(0.10980392, 0, 0, 1)
 ground_horizon_color = Color(0.5375247, 0.6355156, 0.7156432, 1)
 energy_multiplier = 0.15
 
-[sub_resource type="Sky" id="Sky_a0tk4"]
+[sub_resource type="Sky" id="Sky_6ymyu"]
 sky_material = SubResource("ProceduralSkyMaterial_7rktv")
 
 [sub_resource type="Environment" id="Environment_3ye4h"]
 background_mode = 2
-sky = SubResource("Sky_a0tk4")
+sky = SubResource("Sky_6ymyu")
 tonemap_mode = 3
 tonemap_exposure = 1.88
 ssr_enabled = true
 glow_enabled = true
+glow_bloom = 0.59
 adjustment_enabled = true
 adjustment_brightness = 1.3
 
@@ -28,18 +29,18 @@ adjustment_brightness = 1.3
 _data = [Vector2(0.010050252, 1), 0.0, -2.527601, 0, 0, Vector2(1, 0), -0.93503594, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="CurveTexture" id="CurveTexture_jka67"]
+[sub_resource type="CurveTexture" id="CurveTexture_7rktv"]
 curve = SubResource("Curve_6ymyu")
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_7rktv"]
 emission_shape = 3
-emission_box_extents = Vector3(70, 1, 70)
+emission_box_extents = Vector3(35, 0.1, 35)
 direction = Vector3(0, -1, 0)
 initial_velocity_max = 1.0
 gravity = Vector3(0, -15, 0)
 scale_min = 0.099999994
 scale_max = 0.14999999
-alpha_curve = SubResource("CurveTexture_jka67")
+alpha_curve = SubResource("CurveTexture_7rktv")
 turbulence_enabled = true
 turbulence_noise_strength = 0.0
 turbulence_noise_speed_random = 0.0
@@ -47,23 +48,23 @@ turbulence_influence_min = 0.0
 turbulence_influence_max = 0.010000001
 collision_mode = 2
 
-[sub_resource type="Gradient" id="Gradient_jka67"]
+[sub_resource type="Gradient" id="Gradient_3ye4h"]
 offsets = PackedFloat32Array(0.42173913, 0.44347826)
 colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_3ye4h"]
-gradient = SubResource("Gradient_jka67")
+gradient = SubResource("Gradient_3ye4h")
 fill = 1
 fill_from = Vector2(0.47008547, 0.46581197)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wc5p8"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nwbki"]
 transparency = 1
 depth_draw_mode = 1
 vertex_color_use_as_albedo = true
 albedo_texture = SubResource("GradientTexture2D_3ye4h")
 emission_enabled = true
 emission = Color(1, 1, 1, 1)
-emission_energy_multiplier = 6.59
+emission_energy_multiplier = 9.28
 billboard_mode = 3
 particles_anim_h_frames = 1
 particles_anim_v_frames = 1
@@ -75,66 +76,162 @@ stencil_flags = 2
 stencil_outline_thickness = 1.0
 
 [sub_resource type="QuadMesh" id="QuadMesh_nwbki"]
-material = SubResource("StandardMaterial3D_wc5p8")
+material = SubResource("StandardMaterial3D_nwbki")
 size = Vector2(0.25, 0.25)
 
-[node name="MainMenu" type="Node3D"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7rktv"]
+border_color = Color(0, 0, 0, 1)
+border_blend = true
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+shadow_color = Color(0, 0.07450981, 0.42352942, 0.28235295)
+shadow_size = 10
+shadow_offset = Vector2(5, 5)
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3ye4h"]
+bg_color = Color(0, 0.6855648, 0.6953609, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+shadow_color = Color(0, 0.07450981, 0.42352942, 0.28235295)
+shadow_size = 10
+shadow_offset = Vector2(5, 5)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nwbki"]
+bg_color = Color(0.9940838, 0.3662507, 0, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+shadow_color = Color(0, 0.07450981, 0.42352942, 0.28235295)
+shadow_size = 10
+shadow_offset = Vector2(5, 5)
+
+[node name="MainMenu" type="Node3D" unique_id=1709874559]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1393867932]
 environment = SubResource("Environment_3ye4h")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=121670670]
 transform = Transform3D(-0.8660254, -0.4881802, -0.10807504, 0, -0.21615003, 0.9763602, -0.5000001, 0.8455527, 0.18719141, -0.19264245, 6.523369, -12.556533)
 light_energy = 0.327
 shadow_enabled = true
 shadow_opacity = 0.24
 
-[node name="CSGBox3D2" type="CSGBox3D" parent="."]
+[node name="CSGBox3D2" type="CSGBox3D" parent="." unique_id=43529832]
 layers = 32
 use_collision = true
 size = Vector3(100, 1, 100)
 material = ExtResource("1_duh7t")
 
-[node name="Player" parent="." instance=ExtResource("2_6ymyu")]
+[node name="Player" parent="." unique_id=852390696 instance=ExtResource("2_6ymyu")]
 transform = Transform3D(0.8821433, 0, 0.4709811, 0, 1, 0, -0.4709811, 0, 0.8821433, -1.9314389, 0.5, -9.544849)
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8615484, -2.6290817)
+[node name="Skeleton3D" parent="Player/Penguin_v2/Armature" parent_id_path=PackedInt32Array(852390696, 554811093) index="0" unique_id=1199299376]
+bones/0/position = Vector3(0, 0.32711336, 0)
+bones/0/rotation = Quaternion(0, 0, 0.013811375, 0.99990463)
+bones/2/rotation = Quaternion(-0.04118862, -0.01868861, -0.84340096, 0.53537744)
+bones/4/rotation = Quaternion(0.03708115, -0.024539186, 0.86203164, 0.5049002)
+bones/6/position = Vector3(0.0010154916, -0.015829707, -4.561146e-11)
+bones/6/rotation = Quaternion(0.8854353, 0.05207799, 0.102679774, -0.45027655)
+bones/7/rotation = Quaternion(0.50583917, -0.0025940435, 0.025847277, 0.8622366)
+bones/8/position = Vector3(0.4932446, -1.2782127, -0.10141745)
+bones/9/position = Vector3(-0.46793562, -0.8425516, -0.3764137)
+bones/9/rotation = Quaternion(0.8550756, -0.16500357, 0.09216162, 0.48283106)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="Camera3D"]
-autoplay = "camera_main_menu"
+[node name="AugmentUI" parent="Player" index="4" unique_id=1656502800]
+visible = false
 
-[node name="GPUParticles3D" type="GPUParticles3D" parent="Camera3D"]
-transform = Transform3D(1, 0, 0, 0, -0.80777407, 0.58949256, 0, -0.58949256, -0.80777407, 0.5519438, 7.9003305, -6.281534)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=779941995]
+transform = Transform3D(1, 0, 0, 0, 0.52499646, 0.8511045, 0, -0.8511045, 0.52499646, -1.3154411, 13.7398, 2.9543142)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Camera3D" unique_id=1162821351]
+autoplay = &"camera_main_menu"
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Camera3D" unique_id=1095131625]
+transform = Transform3D(1, 0, 0, 0, -0.60654366, 0.79505026, 0, -0.79505026, -0.60654366, 0.5519438, 3.8192282, -1.1392221)
 layers = 3
-amount = 1630
+amount = 1600
 lifetime = 57.1
 fixed_fps = 60
 process_material = SubResource("ParticleProcessMaterial_7rktv")
 draw_pass_1 = SubResource("QuadMesh_nwbki")
 
-[node name="Control" type="Control" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=1010602267]
+
+[node name="MainControl" type="Control" parent="UI" unique_id=403264053]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("3_6ymyu")
 
-[node name="PanelContainer" type="PanelContainer" parent="Control"]
+[node name="VFX_Blur" type="ColorRect" parent="UI/MainControl" unique_id=1784852572]
+z_index = 2
 layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -278.0
-grow_horizontal = 0
+grow_horizontal = 2
 grow_vertical = 2
+color = Color(1, 1, 1, 0.011764706)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Control/PanelContainer"]
-layout_mode = 2
+[node name="MarginContainer" type="MarginContainer" parent="UI/MainControl" unique_id=1410410875]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 197.0
+offset_right = 305.0
+offset_bottom = -197.0
+grow_vertical = 2
+theme_override_constants/margin_right = 82
 
-[node name="Button" type="Button" parent="Control/PanelContainer/VBoxContainer"]
+[node name="MenuButtons" type="VBoxContainer" parent="UI/MainControl/MarginContainer" unique_id=1875256720]
 layout_mode = 2
+theme_override_constants/separation = 25
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="UI/MainControl/MarginContainer/MenuButtons" unique_id=1740729746]
+layout_mode = 2
+theme_override_constants/outline_size = 5
+theme_override_styles/normal = SubResource("StyleBoxFlat_7rktv")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_3ye4h")
+theme_override_styles/hover = SubResource("StyleBoxFlat_nwbki")
 text = "Play"
-script = ExtResource("3_6ymyu")
+
+[node name="PlayButton2" type="Button" parent="UI/MainControl/MarginContainer/MenuButtons" unique_id=2037100069]
+layout_mode = 2
+theme_override_constants/outline_size = 5
+theme_override_styles/normal = SubResource("StyleBoxFlat_7rktv")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_3ye4h")
+theme_override_styles/hover = SubResource("StyleBoxFlat_nwbki")
+text = "Continue"
+
+[node name="SettingsButton" type="Button" parent="UI/MainControl/MarginContainer/MenuButtons" unique_id=1739534560]
+layout_mode = 2
+theme_override_constants/outline_size = 5
+theme_override_styles/normal = SubResource("StyleBoxFlat_7rktv")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_3ye4h")
+theme_override_styles/hover = SubResource("StyleBoxFlat_nwbki")
+text = "Settings"
+
+[node name="QuitButton" type="Button" parent="UI/MainControl/MarginContainer/MenuButtons" unique_id=1339024188]
+layout_mode = 2
+theme_override_constants/outline_size = 5
+theme_override_styles/normal = SubResource("StyleBoxFlat_7rktv")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_3ye4h")
+theme_override_styles/hover = SubResource("StyleBoxFlat_nwbki")
+text = "Quit
+"
+
+[node name="TitleLabel" type="Label" parent="UI/MainControl" unique_id=161568934]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[editable path="Player"]
