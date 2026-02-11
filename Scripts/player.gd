@@ -16,6 +16,7 @@ signal health_changed(current_health, max_health)
 @onready var weapon_manager = get_node_or_null("WeaponManager")
 @onready var spell_weaver_aura = get_node_or_null("VFX_SpellWeaver")
 @onready var pause_menu = $PauseMenu
+@onready var hud_node: hud = $HUD
 
 # Sürekli sahnede kalan efektler
 var winter_aura_instance = null
@@ -73,35 +74,26 @@ func _ready() -> void:
 	add_to_group("player")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
-	sync_stats_from_manager()
-	current_dash_charges = AugmentManager.player_stats.get("dash_charges", 1)
-	
-	# Godspeed verilerini baştan bir kere çek
-	if AugmentManager.mechanic_levels.has("prism_9"):
-		_update_godspeed_stats()
-
-	for vfx in [frost_aura, lifesteal_aura, static_field_vfx, spell_weaver_aura]:
-		if vfx: vfx.hide()
-	
-	aura_timer = Timer.new()
-	aura_timer.wait_time = 0.5
-	aura_timer.autostart = true
-	aura_timer.timeout.connect(_process_active_auras)
-	add_child(aura_timer)
-	
-	call_deferred("_manage_aura_visibility")
 	var saved_data = SaveSystem.load_save_data()
-	if saved_data and saved_data.has("player"):
+	
+	# GÜVENLİ KONTROL: saved_data null değilse ve içinde 'player_pos' varsa devam et
+	if saved_data and saved_data.has("player_pos"):
+		var pos = saved_data["player_pos"]
 		global_position = Vector3(
-			saved_data.player.pos_x, 
-			saved_data.player.get("pos_y", 0.0),
-			saved_data.player.get("pos_z", 0.0) 
+			pos.get("x", global_position.x), 
+			pos.get("y", global_position.y), 
+			pos.get("z", global_position.z)
 		)
 		
-		health = saved_data.player.get("health", 100.0)
-		statss = saved_data.player.get("stats", {})
-		augments = saved_data.player.get("augments", [])
-		mana = saved_data.player.get("mana", 50.0)
+		# game_stats kontrolü
+		if saved_data.has("game_stats"):
+			var stats = saved_data["game_stats"]
+			current_hp = stats.get("hp", 100.0)
+			_load_brain_data(stats)
+	else:
+		# Eğer save dosyası yoksa veya eskiyse statları temiz çek
+		sync_stats_from_manager()
+		print("SİSTEM: Geçerli save bulunamadı, sıfırdan başlanıyor.")
 
 
 func _restore_cds(cd_data):
@@ -110,19 +102,20 @@ func _restore_cds(cd_data):
 		if timer and cd_data[skill_name] > 0:
 			timer.start(cd_data[skill_name])
 
-func load_from_save(data):
-	if data and data.has("player"):
-		var p_data = data.player
-		
-		# XP ve Level
-		AugmentManager.current_xp = p_data.get("current_xp", 0)
-		AugmentManager.current_level = p_data.get("player_level", 1)
-		
-		# Augmentler
-		augments = p_data.get("augments", [])
-		
-		# Artık bu augmentleri yetenek sistemine geri tanıtman gerekebilir
-		_reapply_augments()
+func _load_brain_data(stats_data):
+	# AugmentManager'daki verileri direkt save dosyasındakiyle ezüyoruz
+	AugmentManager.current_xp = stats_data.xp
+	AugmentManager.current_level = stats_data.level
+	AugmentManager.mechanic_levels = stats_data.mechanic_levels
+	AugmentManager.player_stats = stats_data.player_stats
+	
+	# Statlar yüklendi, şimdi player'ın hızı/canı vb. güncellensin
+	sync_stats_from_manager()
+	# Aktif auralları/vfxleri kontrol et
+	_manage_aura_visibility()
+	
+	print("BEDEN: Pozisyon yüklendi. BEYİN: Tüm statlar ve augmentler senkronize edildi.")
+
 
 
 func sync_stats_from_manager():
@@ -161,6 +154,10 @@ func _update_godspeed_stats():
 				if info.has("dmg_speed"): godspeed_has_damage = true
 
 func _physics_process(delta: float) -> void:
+	# --- PAUSE KONTROLÜ ---
+	if get_tree().paused and not is_time_stopped: 
+		return
+
 	if AugmentManager.is_selection_active: return 
 
 	if is_time_stopped:
@@ -490,6 +487,20 @@ func take_damage(amount: float) -> void:
 	if thorns_dmg > 0: _execute_titan_stomp(thorns_dmg)
 	current_hp = clamp(current_hp - reduced_damage, 0, AugmentManager.player_stats["max_hp"])
 	health_changed.emit(current_hp, AugmentManager.player_stats["max_hp"])
+	if current_hp <= 0:
+		_die()
+func _die():
+	get_tree().paused = true # Dünyayı durdur
+	
+	# Sahnedeki HUD'dan süreyi çekebiliriz veya globalden
+	var survival_time = ""
+	if hud_node:
+		survival_time = hud_node.time_label.text
+
+	# Death Screen'i göster
+	var death_screen = get_node_or_null("DeathScreen") # Veya hiyerarşindeki yolu
+	if death_screen:
+		death_screen.setup_and_show(AugmentManager.current_level, survival_time)
 
 func heal(amount: float) -> void:
 	var max_h = AugmentManager.player_stats["max_hp"]

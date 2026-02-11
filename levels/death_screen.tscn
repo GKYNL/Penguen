@@ -1,0 +1,95 @@
+[gd_scene format=3 uid="uid://dv7lo0x6u5kx2"]
+
+[ext_resource type="Script" uid="uid://dld0b2pfid41j" path="res://Scripts/UI/death_screen.gd" id="1_jvqxm"]
+[ext_resource type="Shader" uid="uid://dpq1v6c7dygxo" path="res://shaders/blur.gdshader" id="2_sxiwv"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_aquc5"]
+shader = ExtResource("2_sxiwv")
+shader_parameter/blur_radius = 8
+shader_parameter/blur_strength = 2.25400010380512
+
+[node name="DeathScreen" type="CanvasLayer" unique_id=2091954429]
+process_mode = 3
+script = ExtResource("1_jvqxm")
+
+[node name="BackgroundBlur" type="ColorRect" parent="." unique_id=1005435999]
+material = SubResource("ShaderMaterial_aquc5")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DeathTitle2" type="Label" parent="." unique_id=874036693]
+offset_left = 480.0
+offset_top = 236.0
+offset_right = 507.0
+offset_bottom = 300.0
+theme_override_colors/font_color = Color(0, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 1, 1)
+theme_override_constants/outline_size = 7
+theme_override_constants/shadow_outline_size = 19
+theme_override_font_sizes/font_size = 46
+text = "Y"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DeathTitle3" type="Label" parent="." unique_id=1166087951]
+offset_left = 648.0
+offset_top = 238.0
+offset_right = 682.0
+offset_bottom = 302.0
+theme_override_colors/font_color = Color(0, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 1, 1)
+theme_override_constants/outline_size = 7
+theme_override_constants/shadow_outline_size = 19
+theme_override_font_sizes/font_size = 46
+text = "D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1780484935]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DeathTitle" type="Label" parent="VBoxContainer" unique_id=461749847]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 1, 1)
+theme_override_constants/outline_size = 7
+theme_override_constants/shadow_outline_size = 19
+theme_override_font_sizes/font_size = 24
+text = "OU PERISHE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatLabel" type="Label" parent="VBoxContainer" unique_id=189465636]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 1, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 9
+text = "Level: X | Time: 00:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RestartButton" type="Button" parent="VBoxContainer" unique_id=2094123160]
+layout_mode = 2
+text = "Try Again"
+
+[node name="MainMenuButton" type="Button" parent="VBoxContainer" unique_id=1863128410]
+layout_mode = 2
+text = "Give Up"

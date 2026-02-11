@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bbcvnskliap1n"
-path="res://.godot/imported/dash.png-59fb011a1953d55e8e2d353a0bcc337c.ctex"
+uid="uid://bd0dd1s57q4nx"
+path="res://.godot/imported/start_iceshard.png-b4b1fedffde401f95b252e306bb15d75.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Icons/dash.png"
-dest_files=["res://.godot/imported/dash.png-59fb011a1953d55e8e2d353a0bcc337c.ctex"]
+source_file="res://Assets/Icons/start_iceshard.png"
+dest_files=["res://.godot/imported/start_iceshard.png-b4b1fedffde401f95b252e306bb15d75.ctex"]
 
 [params]
 

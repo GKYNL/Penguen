@@ -61,6 +61,13 @@ func _ready():
 		info_panel.visible = false
 
 func _process(delta):
+	# Gerçek Pause kontrolü: Oyun durmuşsa VE Time Stop aktif değilse işlem yapma.
+	var p = get_tree().get_first_node_in_group("player")
+	var is_in_time_stop = p.is_time_stopped if p else false
+	
+	if get_tree().paused and not is_in_time_stop: 
+		return # Timer ve HUD güncellemeleri burada tamamen donar.
+	
 	game_time += delta
 	_update_timer_display()
 	_check_for_new_augments()
@@ -124,10 +131,21 @@ func _assign_slot_to_augment(aug_id: String):
 			active_slots[aug_id] = s
 			
 			# İkon yükleme mantığı aynı kalabilir
-			_update_slot_labels(s, aug_id)
+			_update_slot_visuals(s, aug_id)
 			return
 
-func _update_slot_labels(slot_node, aug_id):
+func _update_slot_visuals(slot_node, aug_id):
+	# 1. İKONU YÜKLE
+	var icon_rect = slot_node.get_node_or_null("Icon") # TextureRect node'unun adı
+	if icon_rect:
+		var path = "res://Assets/Icons/" + aug_id + ".png"
+		if FileAccess.file_exists(path):
+			icon_rect.texture = load(path)
+			icon_rect.visible = true
+		else:
+			print("UYARI: İkon bulunamadı -> ", path)
+
+	# 2. ETİKETİ GÜNCELLE (Mevcut kodun)
 	var name_label = slot_node.get_node_or_null("NameLabel")
 	var level = AugmentManager.mechanic_levels.get(aug_id, 1)
 	if name_label:
@@ -141,7 +159,7 @@ func _update_ability_slots():
 	
 	for id in active_slots.keys():
 		var slot = active_slots[id]
-		_update_slot_labels(slot, id)
+		_update_slot_visuals(slot, id)
 
 		if skill_map.has(id):
 			var data = skill_map[id]

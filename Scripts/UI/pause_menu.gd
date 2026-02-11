@@ -62,6 +62,8 @@ func _toggle_pause():
 func _on_btn_pressed(btn: Button):
 	if btn == resume_btn:
 		_toggle_pause()
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
 	elif btn == settings_btn:
 		_all_buttons_exit()
 		var inst = SETTINGS_SCENE.instantiate()
@@ -75,9 +77,9 @@ func _on_btn_pressed(btn: Button):
 
 func _on_confirm_yes_pressed():
 	get_tree().paused = false
-	SaveSystem.save_game()
+	#SaveSystem.save_game()
 	get_tree().change_scene_to_file("res://levels/main_menu.tscn")
-
+	
 func _on_confirm_no_pressed():
 	confirm_panel.visible = false
 	_on_settings_closed()
