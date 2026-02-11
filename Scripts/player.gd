@@ -21,10 +21,15 @@ var winter_aura_instance = null
 var time_stop_instance = null
 
 var current_hp: float = 100.0
+
+var aura_timer: Timer
+var current_dash_charges: int = 1
+var max_dash_charges: int = 1
+var dash_timer: float = 0.0
+var dash_cooldown: float = 3.0
 var can_dash: bool = true
 var dash_speed_bonus: float = 1.0
-var current_dash_charges: int = 1
-var aura_timer: Timer
+var final_cd: float = 3.0
 
 # Skill Variables
 var dragon_timer: float = 0.0
@@ -249,62 +254,69 @@ func _apply_velocity_damage(mult: float):
 # --- DASH DÜZELTMESİ (UÇMAYI ENGELLEME) ---
 func execute_dash() -> void:
 	if current_dash_charges <= 0: return 
-	current_dash_charges -= 1
 	
 	var ww_level = AugmentManager.mechanic_levels.get("gold_8", 0)
-
-	# 1. Wind Walker: Mermi Silme (Level 1+)
-	if ww_level >= 1:
-		_clear_projectiles_in_range(5.0)
-
-	# 2. Wind Walker: Işınlanma Görseli (Level 4+)
-	if ww_level >= 4:
-		# Işınlanma efekti için eski pozisyona bir ghost bırakabilirsin
-		pass 
-
-	# Dash Fiziği
-	var dash_speed = 35.0 
+	current_dash_charges -= 1
+	
+	# --- YÖN HESAPLAMA ---
 	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction = -body_mesh.global_transform.basis.z.normalized()
 	if input_dir.length() > 0.1:
 		var cam_basis = camera.global_transform.basis
 		direction = (Vector3(cam_basis.x.x, 0, cam_basis.x.z).normalized() * input_dir.x + 
 					 Vector3(cam_basis.z.x, 0, cam_basis.z.z).normalized() * input_dir.y).normalized()
-	
-	# Level 4 ışınlanma ise direkt pozisyon kaydır
+
+	# --- VFX ---
+	var dash_vfx = VFXPoolManager.spawn_vfx("wind_dash", global_position)
+	if dash_vfx:
+		dash_vfx.look_at(global_position + direction, Vector3.UP)
+		dash_vfx.rotate_object_local(Vector3.RIGHT, PI/2)
+
+	# --- HAREKET ---
 	if ww_level >= 4:
-		global_position += direction * 8.0
+		global_position += direction * 8.5
 	else:
-		velocity = direction * dash_speed
-	
-	# Dash sonrası hız bonusu (Wind Walker Level 2+)
-	if ww_level >= 2:
-		dash_speed_bonus = 1.8 # Daha yüksek hız
-		create_tween().tween_property(self, "dash_speed_bonus", 1.0, 1.2) # Daha uzun sürer
+		velocity = direction * 40.0
+		if ww_level >= 2:
+			dash_speed_bonus = 2.0
+			create_tween().tween_property(self, "dash_speed_bonus", 1.0, 1.2)
 
-	# Dash Cooldown Hesabı
-	var final_cd = (3.0 + AugmentManager.player_stats.get("dash_cooldown", 0.0)) * (1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0))
+	# --- COOLDOWN HESABI ---
+	dash_cooldown = final_cd # Hesapladığın final_cd
+	dash_timer = dash_cooldown
+	_recharge_dash(dash_cooldown, ww_level)
 	
-	# Level 3: Double Dash (Hızlı şarj dolumu)
 	if ww_level >= 3:
-		final_cd *= 0.5 # Şarjlar %50 daha hızlı dolar
-
-	await get_tree().create_timer(max(0.3, final_cd)).timeout
+		final_cd *= 0.5
 	
-	# Şarj yenileme
+	# Timer'ı başlat (HUD bunu okuyacak)
+	dash_timer = final_cd
+	_recharge_dash(final_cd, ww_level)
+
+# Şarj Doldurma (Level 3 ekstra yük kapasitesi sağlar)
+func _recharge_dash(wait_time: float, ww_lvl: int):
+	var tw = create_tween()
+	tw.tween_property(self, "dash_timer", 0.0, wait_time) # Timer'ı 0'a indirir
+	await tw.finished
+
+	
 	var max_charges = AugmentManager.player_stats.get("dash_charges", 1)
-	if ww_level >= 3: max_charges += 1 # +1 Maksimum şarj
+	if ww_lvl >= 3: max_charges += 1
 	
 	if current_dash_charges < max_charges:
 		current_dash_charges += 1
+		# Eğer hala dolacak şarj varsa timer'ı tekrar kur (opsiyonel)
+		if current_dash_charges < max_charges:
+			dash_timer = final_cd
+			_recharge_dash(final_cd, ww_lvl)
 
-# Yardımcı Fonksiyon: Etraftaki düşman mermilerini siler
 func _clear_projectiles_in_range(radius: float):
-	var projectiles = get_tree().get_nodes_in_group("projectiles") # Mermilerine bu grubu eklemelisin
-	for p in projectiles:
-		if global_position.distance_to(p.global_position) < radius:
-			if p.has_method("destroy"): p.destroy()
-			else: p.queue_free()
+	# Düşman mermilerini EnemyProjectiles grubundan siler
+	var projs = get_tree().get_nodes_in_group("EnemyProjectiles")
+	for p in projs:
+		if is_instance_valid(p) and global_position.distance_to(p.global_position) < radius:
+			p.queue_free()
+
 
 # --- DİĞER MEKANİKLER (Aynı Kaldı) ---
 

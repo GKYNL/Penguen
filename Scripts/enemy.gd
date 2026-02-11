@@ -268,7 +268,7 @@ func _show_damage_numbers(value, color):
 	label.modulate = color
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
-	label.pixel_size = 0.01
+	label.pixel_size = 0.07
 	
 	var tw = create_tween().set_parallel(true)
 	tw.tween_property(label, "global_position:y", label.global_position.y + 2.0, 0.4)

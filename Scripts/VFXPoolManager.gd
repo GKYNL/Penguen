@@ -3,25 +3,23 @@ extends Node
 # --- TEMPLATE TANIMLARI ---
 var pool_templates = {
 	# Temel Augmentler
-	"orbital_laser": preload("res://Scenes/VFX/OrbitalLaser.tscn"),
 	"explosion": preload("res://Scenes/VFX/vfx_explosion.tscn"),
 	"static_field": preload("res://Scenes/VFX/static_field.tscn"),
 	"thunder": preload("res://Scenes/VFX/lightning.tscn"),
 	
 	# Prism Yetenekleri
+	"orbital_laser": preload("res://Scenes/VFX/OrbitalLaser.tscn"),
 	"black_hole": preload("res://Scenes/VFX/vfx_black_hole.tscn"),
 	"wind_dash": preload("res://Scenes/VFX/wind_walker.tscn"),
 	"titan_stomp": preload("res://Scenes/VFX/VFXGroundCrack.tscn"),
 	"eternal_winter": preload("res://Scenes/VFX/vfx_eternal_winter.tscn"),
-	
-	# YENİ EKLENENLER (Son 3 Prism)
-	"time_stop": preload("res://Scenes/VFX/vfx_time_stop.tscn"),       # 2D (CanvasLayer)
+	"time_stop": preload("res://Scenes/VFX/vfx_time_stop.tscn"),        # 2D (CanvasLayer)
 	"dragon_breath": preload("res://Scenes/VFX/vfx_dragon_breath.tscn"), # 3D
 	"mirror_image": preload("res://Scenes/VFX/vfx_mirror_clone.tscn"),   # 3D (CharacterBody)
 	"godspeed": preload("res://Scenes/VFX/vfx_godspeed.tscn")            # 3D (Shader/Trail)
 }
 
-var pools = {}
+var pools = {} # Değişken adı pools
 
 func _ready():
 	for key in pool_templates:
@@ -35,13 +33,13 @@ func _pre_fill_pool(key: String, amount: int):
 	for i in range(amount):
 		var vfx = pool_templates[key].instantiate()
 		
-		# GÖRÜNMEZ YAP (Pozisyona dokunma, Tree hatasını önler)
+		# GÖRÜNMEZ YAP
 		vfx.visible = false
 		vfx.process_mode = Node.PROCESS_MODE_DISABLED
 		
-		# Sahneye eklemeyi sıraya al (Güvenli Yöntem)
-		get_tree().root.call_deferred("add_child", vfx)
-		
+		# Başlangıçta sahne ağacına eklemiyoruz, spawn anında eklenecek
+		# Veya istersen burada ekleyip return_to_pool içinde çıkarabilirsin.
+		# Şimdilik temiz bir başlangıç için havuzda bekletiyoruz.
 		pools[key].append(vfx)
 
 func spawn_vfx(key: String, pos: Vector3):
@@ -51,26 +49,18 @@ func spawn_vfx(key: String, pos: Vector3):
 		
 	var vfx
 	if pools[key].is_empty():
-		# Havuz boşsa acil durum üretimi
 		vfx = pool_templates[key].instantiate()
 		vfx.set_meta("pool_key", key)
-		get_tree().root.add_child(vfx) 
 	else:
 		vfx = pools[key].pop_back()
 	
-	# SAHNE KONTROLÜ (Eğer call_deferred henüz eklemediyse)
+	# HAYALET TEMİZLİĞİ: Önce sahneye ekle
 	if not vfx.is_inside_tree():
-		if vfx.get_parent() == null:
-			get_tree().root.add_child(vfx)
+		get_tree().root.add_child(vfx)
 	
-	# --- POZİSYON AYARI ---
-	# Sadece Node3D türevi olanlara (3D objeler) pozisyon veriyoruz.
-	# CanvasLayer (Time Stop) veya Control node'larına pozisyon verilmez.
+	# POZİSYON AYARI
 	if vfx is Node3D:
-		if vfx.is_inside_tree():
-			vfx.global_position = pos
-		else:
-			vfx.position = pos
+		vfx.global_position = pos
 	
 	vfx.visible = true
 	vfx.process_mode = Node.PROCESS_MODE_INHERIT
@@ -78,34 +68,28 @@ func spawn_vfx(key: String, pos: Vector3):
 	# Özel Başlatma Fonksiyonları
 	if vfx.has_method("on_spawn"): vfx.on_spawn()
 	elif vfx.has_method("start_effect"): vfx.start_effect()
-	elif vfx.has_method("activate_effect"): vfx.activate_effect() # Godspeed için
+	elif vfx.has_method("activate_effect"): vfx.activate_effect()
 	elif vfx.has_method("play_effect"): vfx.play_effect(100.0)
 	elif vfx.has_method("restart"): vfx.restart()
 	
 	_activate_particles(vfx)
 	return vfx
 
-func return_to_pool(vfx, key: String = ""):
-	_return_to_pool(vfx, key)
-
-func _return_to_pool(vfx, key: String = ""):
-	if key == "":
-		if vfx.has_meta("pool_key"): key = vfx.get_meta("pool_key")
-		else: vfx.queue_free(); return
-
-	# Sahnede değilse sadece listeye ekle
-	if not vfx.is_inside_tree():
-		pools[key].append(vfx)
-		return
-
-	vfx.visible = false
-	vfx.process_mode = Node.PROCESS_MODE_DISABLED
+func return_to_pool(obj: Node, type: String):
+	if obj.has_method("on_return"):
+		obj.on_return() # Lazer temizliğini tetikler
 	
-	# Yer altına sakla (Sadece Node3D ise)
-	if vfx is Node3D:
-		vfx.global_position = Vector3(0, -500, 0)
+	obj.visible = false
+	obj.process_mode = Node.PROCESS_MODE_DISABLED
 	
-	pools[key].append(vfx)
+	# HAYALET TEMİZLİĞİ: Fizik dünyasından tamamen kopar
+	if obj.get_parent():
+		obj.get_parent().remove_child(obj)
+	
+	# DÜZELTME: pool yerine pools kullanıyoruz
+	if not pools.has(type):
+		pools[type] = []
+	pools[type].append(obj)
 
 func _activate_particles(vfx):
 	for child in vfx.find_children("*", "GPUParticles3D"):

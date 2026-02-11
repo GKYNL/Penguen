@@ -30,6 +30,7 @@ player=""
 Enemies=""
 MapGenerator=""
 enemy_spawner=""
+EnemyProjectiles=""
 
 [input]
 

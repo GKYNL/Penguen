@@ -13,6 +13,7 @@ signal skill_fired(skill_name: String, cooldown: float)
 var active_auto_weapon = null 
 var cooldowns = {}
 var attack_timer: Timer
+var laser_timer: float = 0.0
 
 func _ready():
 	if not is_in_group("weapon_manager"):
@@ -27,11 +28,35 @@ func _ready():
 	if not explosion_vfx:
 		explosion_vfx = load("res://vfx/vfx_explosion.tscn")
 
-func _process(_delta):
+func _process(delta):
 	# Thunderlord Kontrolü
 	if AugmentManager.mechanic_levels.get("gold_1", 0) > 0 and not is_on_cooldown("Thunder"):
 		_execute_thunderlord()
-
+	if AugmentManager.mechanic_levels.has("prism_1"):
+		laser_timer -= delta
+		if laser_timer <= 0:
+			# JSON'dan CD verisini bul
+			var lvl = AugmentManager.mechanic_levels["prism_1"]
+			var current_cd = 4.0 # Varsayılan
+			
+			var pool = AugmentManager.tier_3_pool # Prism olduğu için direkt tier 3'e bak
+			for card in pool:
+				if card.id == "prism_1":
+					var idx = clamp(lvl - 1, 0, card["levels"].size() - 1)
+					# JSON'da anahtar adı 'cd' ise onu, yoksa 'cooldown'ı al
+					current_cd = float(card["levels"][idx].get("cd", card["levels"][idx].get("cooldown", 4.0)))
+					break
+			
+			# Stat bonusunu uygula
+			var cd_mult = 1.0 - AugmentManager.player_stats.get("cooldown_reduction", 0.0)
+			laser_timer = current_cd * cd_mult
+			
+			# Ateşleme
+			var player = get_tree().get_first_node_in_group("player")
+			if player:
+				var laser = VFXPoolManager.spawn_vfx("orbital_laser", player.global_position)
+				if laser and laser.has_method("on_spawn"):
+					laser.on_spawn()
 # --- MERKEZİ ANALİZ FONKSİYONU (GÜVENLİ) ---
 func _get_lv_data(aug_id: String):
 	var lv = AugmentManager.mechanic_levels.get(aug_id, 0)

@@ -62,8 +62,8 @@ func initialize_game_start():
 	print("AugmentManager: Oyun baslatiliyor...")
 	_setup_initial_mechanics()
 	emit_signal("level_changed", current_level)
-	#await get_tree().create_timer(3).timeout
-	_force_unlock_augment("prism_8", 4) 
+	#await get_tree().create_timer(6).timeout
+	#_force_unlock_augment("prism_1", 4) 
 
 func _setup_initial_mechanics():
 	current_level = 1
@@ -107,6 +107,17 @@ func _force_unlock_augment(aug_id: String, level: int = 1):
 		print("Force Unlock: ", aug_id, " Lv.", level)
 		_update_special_mechanic_stats(found_card, level)
 		emit_signal.call_deferred("mechanic_unlocked", aug_id)
+
+
+func add_augment(aug_id: String):
+	if aug_id.begins_with("gold_"):
+		# Aktif gold augment sayısını kontrol et (starterlar hariç)
+		var current_gold_count = 0
+		for id in mechanic_levels.keys():
+			if id.begins_with("gold_"):
+				current_gold_count += 1
+		if current_gold_count >= max_gold_slots and not mechanic_levels.has(aug_id):
+			return
 
 func load_augment_data():
 	var file_path = "res://Data/augments.json"

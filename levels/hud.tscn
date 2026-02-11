@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bgj4r3cqgcvtf"]
 
 [ext_resource type="Script" uid="uid://c03m6v1wpesl8" path="res://Scripts/hud.gd" id="1_37p78"]
+[ext_resource type="Texture2D" uid="uid://mky140xtn6vk" path="res://icon.svg" id="2_1vf74"]
 [ext_resource type="Texture2D" uid="uid://deetch2utsl06" path="res://Assets/progressbar.png" id="2_ysc4d"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ysc4d"]
@@ -28,6 +29,18 @@ border_color = Color(0.60784316, 0.18039216, 0, 1)
 bg_color = Color(1, 0, 0, 1)
 
 [sub_resource type="Theme" id="Theme_1vf74"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1vf74"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lk6mw"]
+bg_color = Color(0.6, 1, 0.6, 1)
+border_width_left = 1
+border_width_top = 3
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(0, 0, 0, 1)
+border_blend = true
 
 [node name="HUD" type="CanvasLayer" unique_id=1393187076]
 script = ExtResource("1_37p78")
@@ -149,6 +162,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_0" unique_id=926029804]
@@ -200,6 +214,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_1" unique_id=520750722]
@@ -251,6 +266,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_2" unique_id=37106736]
@@ -302,6 +318,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_3" unique_id=1659500326]
@@ -353,6 +370,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_4" unique_id=467317605]
@@ -404,6 +422,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_5" unique_id=3803220]
@@ -455,6 +474,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_6" unique_id=1353250890]
@@ -506,6 +526,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_7" unique_id=499178432]
@@ -557,6 +578,7 @@ anchor_right = 0.96700007
 anchor_bottom = 0.96700007
 offset_right = -0.020004272
 offset_bottom = -0.020004272
+texture = ExtResource("2_1vf74")
 expand_mode = 1
 
 [node name="Progress" type="TextureProgressBar" parent="Abilities/Slot_8" unique_id=1070823594]
@@ -597,22 +619,55 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="DashContainer" type="HBoxContainer" parent="." unique_id=1091058328]
-anchors_preset = -1
-anchor_left = 0.172
-anchor_top = 0.938
-anchor_right = 0.266
+[node name="DashContainer" type="Control" parent="." unique_id=444420263]
+layout_mode = 3
+anchor_left = 0.86500007
+anchor_top = 0.91200006
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -0.14401245
-offset_top = 0.17596436
-offset_right = 0.56799316
+offset_left = 0.51989746
+offset_top = 0.023986816
+grow_horizontal = 0
 grow_vertical = 0
 
-[node name="TextureRect" type="TextureRect" parent="DashContainer" unique_id=617242242]
-layout_mode = 2
+[node name="Progress" type="ProgressBar" parent="DashContainer" unique_id=1049337854]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = -0.123
+anchor_right = 0.892
+anchor_bottom = 0.282
+offset_left = 0.065000534
+offset_right = -10.270706
+offset_bottom = 19.229002
+scale = Vector2(1.07, 0.455)
+theme_override_styles/background = SubResource("StyleBoxFlat_1vf74")
+theme_override_styles/fill = SubResource("StyleBoxFlat_lk6mw")
+value = 46.49
+show_percentage = false
 
-[node name="TextureRect2" type="TextureRect" parent="DashContainer" unique_id=1741227787]
-layout_mode = 2
+[node name="Charges" type="HBoxContainer" parent="DashContainer" unique_id=977485650]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.35300002
+anchor_right = 0.99000007
+anchor_bottom = 1.0
+offset_top = -0.0020122528
+offset_right = -0.0028839111
 
-[node name="TextureRect3" type="TextureRect" parent="DashContainer" unique_id=746451456]
+[node name="C1" type="TextureRect" parent="DashContainer/Charges" unique_id=850738678]
 layout_mode = 2
+texture = ExtResource("2_1vf74")
+expand_mode = 2
+stretch_mode = 5
+
+[node name="C2" type="TextureRect" parent="DashContainer/Charges" unique_id=1110538807]
+layout_mode = 2
+texture = ExtResource("2_1vf74")
+expand_mode = 2
+stretch_mode = 5
+
+[node name="C3" type="TextureRect" parent="DashContainer/Charges" unique_id=1607274596]
+layout_mode = 2
+texture = ExtResource("2_1vf74")
+expand_mode = 2
+stretch_mode = 5
